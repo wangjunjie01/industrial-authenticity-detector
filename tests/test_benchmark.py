@@ -1,5 +1,6 @@
 import unittest
 
+from benchmarks.fetch_raid_sample import deduplicate_selection
 from benchmarks.gates import evaluate_gate
 from benchmarks.metrics import auroc, evaluate, threshold_at_fpr
 
@@ -14,6 +15,23 @@ def report(fpr=0.04, tpr=0.8, balanced=0.85, size=1000, latency=0.1, memory=1000
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_stratified_sample_deduplicates_text_fingerprints_deterministically(self):
+        duplicate_a = {
+            "id": "same-text",
+            "label": 1,
+            "genre": "news",
+            "generator": "z-model",
+            "attack": "none",
+        }
+        duplicate_b = {**duplicate_a, "generator": "a-model"}
+        distinct = {**duplicate_a, "id": "other-text"}
+
+        selected = deduplicate_selection([duplicate_a, distinct, duplicate_b], count=2)
+
+        self.assertEqual([item["id"] for item in selected], ["other-text", "same-text"])
+        self.assertEqual(selected[1]["generator"], "a-model")
+        self.assertEqual(len({item["id"] for item in selected}), len(selected))
+
     def test_metrics_are_correct_and_threshold_is_calibrated(self):
         labels = [0, 0, 0, 1, 1, 1]
         scores = [0.1, 0.2, 0.3, 0.65, 0.8, 0.9]

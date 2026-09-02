@@ -45,6 +45,29 @@ def normalize(row: dict, seed: int) -> dict | None:
     }
 
 
+def deduplicate_selection(items: list[dict], count: int) -> list[dict]:
+    """Return a deterministic sample with no text fingerprint in two strata.
+
+    RAID can expose the same underlying text in multiple metadata strata. The
+    text-derived ID is also the split key, so retaining two copies would both
+    bias metrics and violate the locked-split leakage check.
+    """
+    ordered = sorted(
+        items,
+        key=lambda item: (
+            item["id"],
+            item["label"],
+            item["genre"],
+            item["generator"],
+            item["attack"],
+        ),
+    )
+    unique: dict[str, dict] = {}
+    for item in ordered:
+        unique.setdefault(item["id"], item)
+    return list(unique.values())[:count]
+
+
 def fetch(output: Path, count: int, seed: int, scan_limit: int) -> dict:
     try:
         from datasets import load_dataset
@@ -74,9 +97,15 @@ def fetch(output: Path, count: int, seed: int, scan_limit: int) -> dict:
                 heapq.heapreplace(bucket, entry)
         if scanned >= scan_limit:
             break
-    selected = [entry[2] for bucket in buckets.values() for entry in bucket]
-    selected.sort(key=lambda item: item["id"])
-    selected = selected[:count]
+    selected = deduplicate_selection(
+        [entry[2] for bucket in buckets.values() for entry in bucket],
+        count,
+    )
+    if len(selected) < count:
+        raise ValueError(
+            f"Only {len(selected)} unique samples were available after scanning {scanned} rows; "
+            "increase --scan-limit or reduce --count."
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("".join(json.dumps(item, ensure_ascii=False) + "\n" for item in selected), encoding="utf-8")
     return {
