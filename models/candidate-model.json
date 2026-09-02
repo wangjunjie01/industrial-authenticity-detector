@@ -1,0 +1,26 @@
+{
+  "model_id": "iad-transparent-logistic",
+  "version": "2026.10.0",
+  "threshold": 0.62,
+  "intercept": -2.2,
+  "coefficients": {
+    "style_risk": 2.05,
+    "predictability": 1.15,
+    "low_burstiness": 0.8,
+    "finding_density": 1.0,
+    "low_decision_density": 0.58,
+    "low_specificity": 0.48
+  },
+  "applicability": {
+    "minimum_words": 40,
+    "recommended_words": 100,
+    "languages": ["en", "zh"],
+    "domains": ["B2B industrial", "LinkedIn", "Facebook", "Blog", "product copy"]
+  },
+  "license": "MIT",
+  "commercial_use": true,
+  "redistributable": true,
+  "release_eligible": true,
+  "source_revision": "repository candidate configuration 2026-09-02",
+  "training_data_note": "No training corpus; candidate coefficients require RAID and regression gate approval."
+}

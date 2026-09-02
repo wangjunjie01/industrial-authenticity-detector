@@ -1,0 +1,37 @@
+name: Weekly detector benchmark
+
+on:
+  schedule:
+    - cron: "23 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[benchmark,updates]'
+      - name: Fetch locked RAID sample
+        run: python -m benchmarks.fetch_raid_sample --output benchmark-results/raid.jsonl --count 600 --seed 20260902
+      - name: Run rules baseline, current, and candidate benchmark
+        run: |
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model models/rule-baseline.json --output benchmark-results/rules-baseline.json
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model src/industrial_authenticity/models/bundled-model.json --output benchmark-results/current.json
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model models/candidate-model.json --output benchmark-results/candidate.json
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Record release-gate result
+        run: python -m benchmarks.gate_candidate --current benchmark-results/current.json --candidate benchmark-results/candidate.json --output benchmark-results/gate.json --regression-tests-passed --report-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weekly-detector-benchmark-${{ github.run_number }}
+          path: benchmark-results/
+          retention-days: 90

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "policy": "Commercial use and redistribution must be explicitly permitted before release.",
+  "models": [
+    {
+      "model_id": "iad-transparent-logistic",
+      "version": "2026.09.0",
+      "role": "current",
+      "source": "repository configuration",
+      "commit": "bundled",
+      "license": "MIT",
+      "training_data": "No training corpus. Hand-calibrated transparent coefficients over observable writing features.",
+      "redistributable": true,
+      "commercial_use": true,
+      "release_eligible": true
+    },
+    {
+      "model_id": "iad-transparent-logistic",
+      "version": "2026.10.0",
+      "role": "monthly_candidate",
+      "source": "repository configuration",
+      "commit": "candidate configuration 2026-09-02",
+      "license": "MIT",
+      "training_data": "No training corpus. Candidate is frozen before the benchmark; the workflow performs no fitting.",
+      "redistributable": true,
+      "commercial_use": true,
+      "release_eligible": true
+    },
+    {
+      "model_id": "rules-only-baseline",
+      "version": "2026.09.0",
+      "role": "rules_baseline",
+      "source": "repository configuration",
+      "commit": "bundled",
+      "license": "MIT",
+      "training_data": "None. Uses only writing-style risk and formulaic-finding density.",
+      "redistributable": true,
+      "commercial_use": true,
+      "release_eligible": false
+    },
+    {
+      "model_id": "roberta-open-detector",
+      "role": "historical_comparison_only",
+      "license_review": "required per exact candidate checkpoint",
+      "release_eligible": false,
+      "reason": "A historical comparison cannot become production solely from one leading metric."
+    },
+    {
+      "model_id": "binoculars-research",
+      "role": "cloud_research_only",
+      "source": "https://proceedings.mlr.press/v235/hans24a.html",
+      "release_eligible": false,
+      "reason": "Two-model resource requirements exceed the local lightweight package policy."
+    }
+  ]
+}

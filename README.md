@@ -1,20 +1,22 @@
 # Industrial Authenticity Detector
 
-An explainable local quality gate for LinkedIn, Facebook, blog, and industrial B2B writing. It highlights formulaic language, weak decision logic, unsupported marketing terms, low specificity, and missing engineering trade-offs.
+A privacy-first, local writing review tool for LinkedIn, Facebook, blogs, product pages, and industrial B2B content. It combines explainable style analysis with a separately reported lightweight model benchmark.
 
-> **Scope:** This project diagnoses writing patterns. It does not determine whether a human or AI authored a text, does not output an AI-authorship probability, and is not designed to evade third-party detectors.
+> **Scope:** Results are risk indicators, not author identification. A probability is not proof that a person or an AI wrote the text. Conflicting signals require human review.
 
-## What v0.1.0 includes
+## What v0.2.0 includes
 
-- statistical layer: sentence-length variation, lexical diversity, repetition, burstiness score, and a documented predictability proxy;
-- explainable style classifier: low / medium / high AI-like writing risk with visible signals;
-- multilingual rule layer for common English and Chinese formulaic patterns;
-- Industrial Authenticity Engine with six quality dimensions;
-- sentence-level risk highlighting and rule evidence;
-- prioritized revision suggestions that do not invent technical facts;
-- channel profiles for LinkedIn, Facebook, Blog, and B2B copy;
-- dependency-free local Web UI and JSON API;
-- CLI and automated tests.
+- two independent result tracks:
+  - `writing_style_risk`: statistics, explainable rules, sentence highlighting, and the Industrial Authenticity Engine;
+  - `model_detection`: a lightweight local model's AI-like benchmark probability, confidence, applicability, and exact model version;
+- bilingual English/Chinese review and platform profiles for LinkedIn, Facebook, Blog, B2B, and general copy;
+- prioritized revision suggestions that never invent technical facts;
+- an offline local Web UI, CLI, and compatible JSON API;
+- a private, gitignored industrial validation corpus that never leaves the machine;
+- signed, versioned detector bundles with explicit user confirmation, health checks, and one-click rollback;
+- weekly cloud benchmarks and at most one approved signed candidate per month.
+
+The bundled model is intentionally small and transparent. It is a calibrated logistic scoring layer over inspectable writing signals, not a claim of state-of-the-art authorship detection. Candidate models remain research-only until every release gate passes.
 
 ## Quick start
 
@@ -23,27 +25,35 @@ Requires Python 3.10 or newer.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[updates]'
 industrial-authenticity serve
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Text is processed locally and is not uploaded by this application.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Paste an article, choose the channel, and select **Analyze locally**. The application does not upload the article.
 
-Analyze a text file from the command line:
+Analyze a file from the command line:
 
 ```bash
 industrial-authenticity analyze draft.txt --platform linkedin
 ```
 
-Or run directly from the source checkout without installing:
+Run directly from a source checkout:
 
 ```bash
 PYTHONPATH=src python -m industrial_authenticity.cli serve
 ```
 
+## Reading the result
+
+`writing_style_risk` answers: *Which visible writing patterns deserve editorial review?* It considers rhythm, repetition, formulaic wording, unsupported claims, decision conditions, specificity, constraints, and trade-offs.
+
+`model_detection` answers: *How AI-like is this text under the installed lightweight benchmark model?* It includes applicability and confidence because short, mixed-language, highly technical, or out-of-domain content can make the model less reliable.
+
+The two tracks are not combined into an authorship score. If they disagree, the interface says so and asks for human review.
+
 ## API
 
-`POST /api/analyze`
+`POST /api/analyze` remains compatible with v0.1 requests:
 
 ```json
 {
@@ -52,55 +62,108 @@ PYTHONPATH=src python -m industrial_authenticity.cli serve
 }
 ```
 
-Supported platform values are `linkedin`, `facebook`, `blog`, `b2b`, and `general`. The local server accepts up to 50,000 characters per analysis.
+The response now includes:
 
-## How scoring works
+```json
+{
+  "detector_version": "2026.09.0",
+  "writing_style_risk": {},
+  "model_detection": {
+    "probability": 0.37,
+    "confidence": "medium",
+    "applicability": "applicable",
+    "model_id": "iad-lightweight-logistic",
+    "model_version": "2026.09.0"
+  }
+}
+```
 
-The tool combines three inspectable layers:
+The legacy `classifier` field is retained. Supported platforms are `linkedin`, `facebook`, `blog`, `b2b`, and `general`; requests are limited to 50,000 characters.
 
-1. **Statistical signals** measure the text's rhythm and repetition. `predictability_proxy` is explicitly a lexical/rhythm heuristic, not model perplexity.
-2. **Rules** point to exact sentences containing generic verbs, unsupported marketing vocabulary, formulaic transitions, repeated openings, or overloaded sentences.
-3. **Industrial authenticity** rewards decision conditions, engineering variables, constraints, and trade-offs when they are actually present.
+Local-only maintenance endpoints:
 
-Scores are editorial prioritization aids, not scientific measurements. Short copy, technical terminology, or polished grammar is never treated as proof of AI authorship. Reviewers remain responsible for verifying specifications, test data, certifications, customer claims, and publication authorization.
+- `GET /api/update/status` — current/available version, evaluation notes, signature state, and one-time confirmation tokens;
+- `POST /api/update/apply` — download, verify, validate, switch, and health-check an approved release after confirmation;
+- `POST /api/update/rollback` — return to the previous healthy version after confirmation;
+- `GET /api/private-corpus/status` and `POST /api/private-corpus/import` — manage the local validation corpus.
+
+These endpoints reject non-loopback requests. They do not accept a caller-provided URL or filesystem path.
+
+## Safe update lifecycle
+
+```text
+Official RAID public benchmark
+            ↓ weekly, fixed seed
+current release ↔ rule baseline ↔ registered candidates
+            ↓ accuracy + subgroup + license + size + speed + tests
+monthly candidate (only when every gate passes)
+            ↓ signed GitHub Release
+local status page → user confirms → verify → private validation → switch
+                                                    ↘ failure: keep/rollback
+```
+
+Cloud automation monitors and evaluates automatically. Installation never happens automatically. The local page checks releases no more than once per 24 hours and only shows an upgrade when an installable signed version is newer.
+
+Release gates are encoded in [`benchmarks/gates.py`](benchmarks/gates.py): public FPR ≤ 5%, TPR@5% FPR regression ≤ 2 percentage points, Balanced Accuracy regression ≤ 1 point, critical human subgroup FPR regression ≤ 1 point, bundle/model limits, target-Mac latency and memory limits, license/redistribution approval, and complete regression tests.
+
+Large two-model approaches such as Binoculars are cloud research comparisons only and are never included in the local package. A candidate registry records source, revision, license, redistribution status, training-data notes, and deployment scope in [`models/registry.json`](models/registry.json).
+
+## Private industrial validation
+
+Use the Web UI to paste **de-identified, human-written** samples. Separate samples with a blank line and choose their content category. The local store generates an anonymous ID from each sample:
+
+```json
+{"id":"generated-locally","category":"b2b","text":"..."}
+```
+
+Private originals are stored under the application state directory, excluded by `.gitignore`, never uploaded, and never written into update logs. Only aggregate metrics and anonymous IDs are used. An approved update is blocked if human industrial copy exceeds 5% false positives or worsens by more than 1 percentage point compared with the active version. If there are too few samples, the UI clearly marks the validation as insufficient.
+
+## Cloud benchmark and release
+
+The weekly workflow deterministically samples the official RAID dataset across human/AI labels, generators, genres, and attacks, then stores metrics and subgroup results as a GitHub Actions artifact. The monthly workflow repeats the benchmark with a larger sample, runs all tests, applies the release gates, and creates a signed release only on success.
+
+Repository maintainers must configure the GitHub Actions secret `UPDATE_SIGNING_PRIVATE_KEY`. The matching Ed25519 public key is bundled with the application. Never commit the private key.
+
+Run the benchmark locally only when needed:
+
+```bash
+python -m pip install -e '.[benchmark,updates]'
+python -m benchmarks.fetch_raid_sample --output benchmark-results/raid.jsonl --count 600 --seed 20260902
+python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model src/industrial_authenticity/models/bundled-model.json --output benchmark-results/current.json
+```
+
+Public benchmark content is downloaded only in GitHub Actions or by this explicit command; it is not bundled with or downloaded by the local application.
 
 ## Tests
-
-No test dependency is required:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-If `pytest` is installed, `pytest` also works.
+Tests cover bilingual/empty/long inputs, model failure fallback, dual-track contracts, deterministic metrics and gates, private-corpus acceptance, signature/hash/path/size rejection, one-time tokens, signed install, health checks, and rollback.
 
 ## Project structure
 
 ```text
 src/industrial_authenticity/
-├── analyzer.py       # statistics, rules, classifier, authenticity scores
-├── cli.py            # analyze and serve commands
-├── server.py         # local HTTP server and JSON endpoint
-└── web/              # responsive local Web UI
-tests/                # core contract and bilingual behavior tests
+├── analyzer.py          # style/rule/authenticity analysis and dual-track contract
+├── model.py             # lightweight offline model and safe fallback
+├── updates.py           # signed local-only install and rollback manager
+├── private_corpus.py    # local industrial validation
+├── server.py            # loopback Web/API server
+└── web/                 # non-technical local UI
+benchmarks/              # RAID sampler, metrics, reports, and release gates
+models/                  # candidate registry and research candidate configuration
+scripts/                 # deterministic bundle builder and signer
+tests/                   # unit, API/UI, benchmark, security, and upgrade tests
 ```
 
-## Roadmap
+## Privacy, security, and responsible use
 
-- optional locally hosted transformer adapter with model-card and calibration reporting;
-- editable organization rule packs;
-- exportable audit reports;
-- regression corpus for industrial packaging content;
-- reviewer-approved rewrite workflow with fact-check queue.
+The default server listens on `127.0.0.1`, has no telemetry, invokes no paid detector API, and stores no analyzed article. Network access is limited to checking and downloading approved GitHub Releases. Update bundles require an Ed25519 signature, SHA-256 match, repository/compatibility checks, size limits, safe extraction, local validation, and health checks.
 
-## Privacy and security
+Do not expose the server publicly without separate authentication and deployment hardening. Do not use a result as evidence of academic misconduct, employment wrongdoing, authorship, or deception. Reviewers remain responsible for verifying specifications, test data, certifications, customer claims, and publication authorization.
 
-The default server listens on `127.0.0.1`, has no telemetry, uses no external APIs, and stores no analyzed text. Do not bind it to a public interface without adding authentication, request controls, and deployment hardening.
+## License and notices
 
-## License and third-party code
-
-The project is released under the [MIT License](LICENSE). Version 0.1.0 was implemented without copying code or model weights from the GitHub projects considered during research, so there are no bundled third-party runtime components. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the boundary and future contribution requirements.
-
-## Responsible use
-
-Use the detector to improve clarity, evidence, and professional credibility. Do not use it as evidence of academic misconduct, employment wrongdoing, authorship, or deception. Do not fabricate anecdotes, specifications, test results, or random stylistic noise to change a score.
+Project source is released under the [MIT License](LICENSE). Dataset, optional dependencies, and research references retain their own licenses and are not relicensed by this repository. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

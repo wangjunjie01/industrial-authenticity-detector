@@ -1,0 +1,56 @@
+name: Monthly signed detector candidate
+
+on:
+  schedule:
+    - cron: "41 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-detector-release
+  cancel-in-progress: false
+
+jobs:
+  evaluate-and-release:
+    runs-on: macos-14
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[benchmark,updates]'
+      - run: python -m benchmarks.fetch_raid_sample --output benchmark-results/raid.jsonl --count 1200 --seed 20260902
+      - run: |
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model models/rule-baseline.json --output benchmark-results/rules-baseline.json
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model src/industrial_authenticity/models/bundled-model.json --output benchmark-results/current.json
+          python -m benchmarks.run_benchmark --dataset benchmark-results/raid.jsonl --model models/candidate-model.json --output benchmark-results/candidate.json
+      - run: python -m unittest discover -s tests -v
+      - run: python -m benchmarks.gate_candidate --current benchmark-results/current.json --candidate benchmark-results/candidate.json --output benchmark-results/gate.json --regression-tests-passed
+      - name: Build and sign approved lightweight bundle
+        env:
+          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
+        run: |
+          VERSION="$(date -u +'%Y.%m.0')"
+          python scripts/build_detector_bundle.py --model models/candidate-model.json --report benchmark-results/candidate.json --output-dir release --version "$VERSION"
+          python scripts/sign_manifest.py --manifest release/detector-manifest.json --output release/detector-manifest.sig
+          cp benchmark-results/candidate.json release/evaluation-report.json
+          cp models/registry.json release/model-registry.json
+          printf '%s' "$VERSION" > release/version.txt
+      - name: Publish at most one approved candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(cat release/version.txt)"
+          TAG="detector-$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then exit 0; fi
+          gh release create "$TAG" release/detector-bundle-"$VERSION".zip release/detector-manifest.json release/detector-manifest.sig release/evaluation-report.json release/model-registry.json --title "Approved detector $VERSION" --notes-file benchmark-results/gate.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monthly-detector-evaluation-${{ github.run_number }}
+          path: benchmark-results/
+          retention-days: 365
