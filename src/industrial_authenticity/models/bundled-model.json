@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "model_id": "iad-transparent-linear-v1",
+  "version": "2026.09.0",
+  "format": "transparent-logistic-json",
+  "threshold": 0.62,
+  "intercept": -3.05,
+  "coefficients": {
+    "style_risk": 2.4,
+    "predictability": 1.05,
+    "low_burstiness": 0.65,
+    "finding_density": 1.15,
+    "low_decision_density": 0.55,
+    "low_specificity": 0.35
+  },
+  "applicability": {
+    "languages": ["en", "zh"],
+    "content": ["linkedin", "facebook", "blog", "b2b"],
+    "minimum_words": 40,
+    "recommended_words": 100
+  },
+  "license": "MIT",
+  "redistribution": "permitted",
+  "redistributable": true,
+  "commercial_use": true,
+  "release_eligible": true,
+  "source_revision": "repository bundled configuration 2026-09-02",
+  "training_data": "No private user text. Coefficients are an original transparent baseline calibrated on repository fixtures.",
+  "limitations": "Benchmark-pattern estimate only; not an authorship determination. Revalidate on representative local industrial prose."
+}

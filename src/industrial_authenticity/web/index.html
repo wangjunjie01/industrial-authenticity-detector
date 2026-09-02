@@ -3,22 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Industrial Authenticity Detector</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="shell">
-    <header>
-      <p class="eyebrow">INDUSTRIAL CONTENT QUALITY</p>
-      <h1>Industrial Authenticity Detector</h1>
-      <p class="lede">Find formulaic writing, weak engineering logic, and low-information claims before industrial B2B content goes live.</p>
-      <p class="boundary">Writing-pattern diagnosis only — never an authorship verdict.</p>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">INDUSTRIAL CONTENT QUALITY</p>
+        <h1>Industrial Authenticity Detector</h1>
+        <p class="lede">Review formulaic writing, model-pattern similarity, engineering logic, and decision value before B2B content goes live.</p>
+      </div>
+      <aside class="privacy-note"><strong>Local by design</strong><span>Drafts and private samples stay on this computer.</span></aside>
     </header>
+
+    <section id="update-center" class="update-center panel" aria-live="polite">
+      <div>
+        <p class="section-label">DETECTOR VERSION</p>
+        <strong id="current-version">Checking…</strong>
+        <span id="update-message">Only approved signed releases can be installed.</span>
+      </div>
+      <div class="update-actions">
+        <a id="report-link" class="text-link hidden" target="_blank" rel="noopener noreferrer">View evaluation report</a>
+        <button id="update-button" class="secondary hidden">Confirm upgrade</button>
+        <button id="rollback-button" class="ghost hidden">Roll back</button>
+      </div>
+    </section>
 
     <section class="workspace">
       <div class="input-panel panel">
         <div class="panel-head">
-          <label for="platform">Channel</label>
+          <div><label for="platform">Channel</label><p class="hint">Guidance changes by publishing context.</p></div>
           <select id="platform">
             <option value="linkedin">LinkedIn</option>
             <option value="facebook">Facebook</option>
@@ -28,52 +44,72 @@
           </select>
         </div>
         <label class="sr-only" for="draft">Draft</label>
-        <textarea id="draft" maxlength="50000" placeholder="Paste industrial B2B copy here…"></textarea>
+        <textarea id="draft" maxlength="50000" placeholder="Paste English or Chinese industrial B2B copy here…"></textarea>
         <div class="input-actions">
           <span id="count">0 characters</span>
           <button id="analyze">Analyze draft</button>
         </div>
+        <p id="operation-status" class="operation-status" role="status"></p>
       </div>
 
       <section id="empty" class="empty panel">
-        <div class="diagram">TEXT → SIGNALS → DECISIONS</div>
-        <h2>A quality gate, not a black box</h2>
-        <p>The report explains every flag and keeps missing facts visible.</p>
+        <div class="diagram">TEXT → TWO INDEPENDENT SIGNALS → HUMAN REVIEW</div>
+        <h2>A decision aid, not an authorship verdict</h2>
+        <p>Writing-style risk and model-pattern probability remain separate. Every rule flag includes evidence and a revision action.</p>
       </section>
 
       <section id="results" class="results hidden" aria-live="polite">
-        <div class="score-row">
-          <article class="score-card dark">
-            <p>AI-like writing risk</p><strong id="risk">—</strong><span id="band">—</span>
+        <div class="dual-track">
+          <article class="track-card panel">
+            <p class="section-label">TRACK 1 · EXPLAINABLE HEURISTICS</p>
+            <h2>Writing style risk</h2>
+            <div class="score-line"><strong id="risk">—</strong><span>/ 100</span></div>
+            <p id="band" class="status-pill">—</p>
+            <p>Statistical rhythm, transparent rules, and industrial-content signals.</p>
           </article>
+          <article class="track-card panel">
+            <p class="section-label">TRACK 2 · LIGHTWEIGHT LOCAL MODEL</p>
+            <h2>AI-like pattern probability</h2>
+            <div class="score-line"><strong id="model-probability">—</strong><span>%</span></div>
+            <p id="model-confidence" class="status-pill">—</p>
+            <p id="model-applicability">—</p>
+            <small id="model-id">—</small>
+          </article>
+        </div>
+        <p id="review-guidance" class="review-guidance"></p>
+
+        <div class="score-row">
           <article class="score-card"><p>Industrial authenticity</p><strong id="authenticity">—</strong><span>quality score</span></article>
           <article class="score-card"><p>Predictability proxy</p><strong id="predictability">—</strong><span>transparent heuristic</span></article>
+          <article class="score-card"><p>Sentence findings</p><strong id="finding-count">—</strong><span>explained below</span></article>
         </div>
 
         <div class="grid">
-          <article class="panel report-card">
-            <h2>Quality dimensions</h2>
-            <div id="dimensions"></div>
-          </article>
-          <article class="panel report-card">
-            <h2>Revise first</h2>
-            <ol id="suggestions"></ol>
-          </article>
+          <article class="panel report-card"><h2>Quality dimensions</h2><div id="dimensions"></div></article>
+          <article class="panel report-card"><h2>Revise first</h2><ol id="suggestions"></ol></article>
         </div>
-
         <article class="panel report-card">
           <div class="section-heading"><h2>Sentence review</h2><div class="legend"><i class="low"></i>low <i class="medium"></i>medium <i class="high"></i>high</div></div>
           <div id="sentences" class="sentence-list"></div>
         </article>
-
-        <article class="panel report-card">
-          <h2>Evidence</h2>
-          <div id="findings"></div>
-        </article>
+        <article class="panel report-card"><h2>Evidence</h2><div id="findings"></div></article>
       </section>
+
+      <details class="panel private-panel">
+        <summary>Local industry validation samples</summary>
+        <div class="private-content">
+          <p>Add de-identified human-written samples to check false positives before any upgrade. Separate samples with a blank line. Raw text is never uploaded or added to GitHub.</p>
+          <div class="private-grid">
+            <select id="corpus-category" aria-label="Sample category">
+              <option value="linkedin">LinkedIn</option><option value="facebook">Facebook</option><option value="blog">Blog</option><option value="product">Product description</option><option value="b2b">B2B general</option>
+            </select>
+            <textarea id="corpus-text" maxlength="1000000" placeholder="Paste de-identified human-written samples…"></textarea>
+          </div>
+          <div class="input-actions"><span id="corpus-status">No local samples loaded.</span><button id="corpus-import" class="secondary">Import locally</button></div>
+        </div>
+      </details>
     </section>
   </main>
   <script src="/app.js"></script>
 </body>
 </html>
-

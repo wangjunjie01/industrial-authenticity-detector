@@ -12,6 +12,9 @@ import re
 from statistics import mean, pstdev
 from typing import Iterable
 
+from .model import LightweightModel, safe_predict
+from .version import APP_VERSION, BUNDLED_DETECTOR_VERSION
+
 
 SCOPE_NOTE = (
     "Writing-pattern diagnosis only; this is not an AI-authorship or "
@@ -183,7 +186,11 @@ def _platform_fit(platform: str, stats: dict, text: str) -> tuple[int, str]:
     return _clamp(score), note
 
 
-def analyze_text(text: str, platform: str = "general") -> dict:
+def analyze_text(
+    text: str,
+    platform: str = "general",
+    model: LightweightModel | None = None,
+) -> dict:
     """Analyze *text* and return a JSON-serializable explainable report."""
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Text must contain at least one non-whitespace character.")
@@ -264,7 +271,9 @@ def analyze_text(text: str, platform: str = "general") -> dict:
         suggestions.append("Name the relevant trade-off instead of presenting benefits without limits.")
     suggestions = list(dict.fromkeys(suggestions))[:6]
 
-    return {
+    report = {
+        "detector_version": APP_VERSION,
+        "detector_bundle_version": model.version if model else BUNDLED_DETECTOR_VERSION,
         "scope_note": SCOPE_NOTE,
         "platform": platform,
         "classifier": {
@@ -293,3 +302,19 @@ def analyze_text(text: str, platform: str = "general") -> dict:
         "sentences": per_sentence,
         "revision_plan": suggestions,
     }
+    # Keep `classifier` for v0.1 API consumers while exposing the two tracks
+    # independently. They must not be averaged into an authorship score.
+    report["writing_style_risk"] = dict(report["classifier"])
+    report["model_detection"] = safe_predict(report, model)
+    style_high = risk >= 65
+    model_probability = report["model_detection"].get("probability")
+    model_high = model_probability is not None and model_probability >= report["model_detection"]["threshold"]
+    report["review_guidance"] = {
+        "signals_conflict": model_probability is not None and style_high != model_high,
+        "message": (
+            "The two independent signals differ. Review highlighted evidence and context manually."
+            if model_probability is not None and style_high != model_high
+            else "Use both tracks as decision support, never as proof of authorship."
+        ),
+    }
+    return report

@@ -18,10 +18,11 @@ def main() -> None:
     web = sub.add_parser("serve", help="Start the local Web UI")
     web.add_argument("--host", default="127.0.0.1")
     web.add_argument("--port", type=int, default=8765)
+    web.add_argument("--state-dir", default=None, help="Override the local private state directory")
     args = parser.parse_args()
 
     if args.command == "serve":
-        serve(args.host, args.port)
+        serve(args.host, args.port, args.state_dir)
         return
     text = sys.stdin.read() if args.path == "-" else Path(args.path).read_text(encoding="utf-8")
     print(json.dumps(analyze_text(text, args.platform), ensure_ascii=False, indent=2))
@@ -29,4 +30,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

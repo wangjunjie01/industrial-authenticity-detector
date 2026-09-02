@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "model_id": "rules-only-baseline",
+  "version": "2026.09.0",
+  "format": "transparent-logistic-json",
+  "threshold": 0.62,
+  "intercept": -2.1,
+  "coefficients": {
+    "style_risk": 3.0,
+    "finding_density": 0.7
+  },
+  "applicability": {
+    "minimum_words": 40,
+    "recommended_words": 100,
+    "languages": ["en", "zh"],
+    "domains": ["B2B industrial", "LinkedIn", "Facebook", "Blog", "product copy"]
+  },
+  "license": "MIT",
+  "commercial_use": true,
+  "redistributable": true,
+  "release_eligible": false,
+  "source_revision": "repository rules baseline 2026-09-02",
+  "training_data_note": "None. This cloud comparison baseline uses only existing rule-layer outputs."
+}

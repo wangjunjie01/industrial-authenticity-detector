@@ -9,4 +9,7 @@ dist/
 build/
 *.egg-info/
 .DS_Store
-
+private_corpus/
+*.private.jsonl
+.iad-state/
+benchmark-results/
