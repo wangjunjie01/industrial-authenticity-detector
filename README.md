@@ -9,7 +9,7 @@ A privacy-first, local writing review tool for LinkedIn, Facebook, blogs, produc
 - two independent result tracks:
   - `writing_style_risk`: statistics, explainable rules, sentence highlighting, and the Industrial Authenticity Engine;
   - `model_detection`: a lightweight local model's AI-like benchmark probability, confidence, applicability, and exact model version;
-- bilingual English/Chinese review and platform profiles for LinkedIn, Facebook, Blog, B2B, and general copy;
+- a simultaneous Chinese/English Web UI, bilingual review, and platform profiles for LinkedIn, Facebook, Blog, B2B, and general copy;
 - prioritized revision suggestions that never invent technical facts;
 - an offline local Web UI, CLI, and compatible JSON API;
 - a private, gitignored industrial validation corpus that never leaves the machine;
@@ -29,7 +29,7 @@ python -m pip install -e '.[updates]'
 industrial-authenticity serve
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Paste an article, choose the channel, and select **Analyze locally**. The application does not upload the article.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Paste an article, choose the channel, and select **分析文案 / Analyze draft**. The application does not upload the article.
 
 Analyze a file from the command line:
 

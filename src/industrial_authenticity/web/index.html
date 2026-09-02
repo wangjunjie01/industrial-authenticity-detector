@@ -1,75 +1,75 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Industrial Authenticity Detector</title>
+  <title>工业真实性检测器 | Industrial Authenticity Detector</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">INDUSTRIAL CONTENT QUALITY</p>
-        <h1>Industrial Authenticity Detector</h1>
-        <p class="lede">Review formulaic writing, model-pattern similarity, engineering logic, and decision value before B2B content goes live.</p>
+        <p class="eyebrow">工业内容质量 <span lang="en">/ INDUSTRIAL CONTENT QUALITY</span></p>
+        <h1>工业真实性检测器 <span class="title-en" lang="en">Industrial Authenticity Detector</span></h1>
+        <p class="lede">B2B 内容发布前，检查程式化写作、模型模式相似度、工程逻辑与决策价值。<span class="en-line" lang="en">Review formulaic writing, model-pattern similarity, engineering logic, and decision value before B2B content goes live.</span></p>
       </div>
-      <aside class="privacy-note"><strong>Local by design</strong><span>Drafts and private samples stay on this computer.</span></aside>
+      <aside class="privacy-note"><strong>本地优先 <span lang="en">/ Local by design</span></strong><span>草稿和私有样本仅保留在本机。<span class="en-line" lang="en">Drafts and private samples stay on this computer.</span></span></aside>
     </header>
 
     <section id="update-center" class="update-center panel" aria-live="polite">
       <div>
-        <p class="section-label">DETECTOR VERSION</p>
-        <strong id="current-version">Checking…</strong>
-        <span id="update-message">Only approved signed releases can be installed.</span>
+        <p class="section-label">检测器版本 <span lang="en">/ DETECTOR VERSION</span></p>
+        <strong id="current-version">正在检查… / Checking…</strong>
+        <span id="update-message">仅可安装已通过评测并签名的版本。<span class="en-line" lang="en">Only approved signed releases can be installed.</span></span>
       </div>
       <div class="update-actions">
-        <a id="report-link" class="text-link hidden" target="_blank" rel="noopener noreferrer">View evaluation report</a>
-        <button id="update-button" class="secondary hidden">Confirm upgrade</button>
-        <button id="rollback-button" class="ghost hidden">Roll back</button>
+        <a id="report-link" class="text-link hidden" target="_blank" rel="noopener noreferrer">查看评测报告 / View evaluation report</a>
+        <button id="update-button" class="secondary hidden">确认升级 / Confirm upgrade</button>
+        <button id="rollback-button" class="ghost hidden">回滚 / Roll back</button>
       </div>
     </section>
 
     <section class="workspace">
       <div class="input-panel panel">
         <div class="panel-head">
-          <div><label for="platform">Channel</label><p class="hint">Guidance changes by publishing context.</p></div>
+          <div><label for="platform">发布渠道 / Channel</label><p class="hint">建议会根据发布场景调整。 / Guidance changes by publishing context.</p></div>
           <select id="platform">
             <option value="linkedin">LinkedIn</option>
             <option value="facebook">Facebook</option>
             <option value="blog">Blog</option>
-            <option value="b2b">B2B / sales copy</option>
-            <option value="general">General</option>
+            <option value="b2b">B2B / 销售文案 / Sales copy</option>
+            <option value="general">通用 / General</option>
           </select>
         </div>
-        <label class="sr-only" for="draft">Draft</label>
-        <textarea id="draft" maxlength="50000" placeholder="Paste English or Chinese industrial B2B copy here…"></textarea>
+        <label class="sr-only" for="draft">草稿 / Draft</label>
+        <textarea id="draft" maxlength="50000" placeholder="在此粘贴中文或英文工业 B2B 文案… / Paste Chinese or English industrial B2B copy here…"></textarea>
         <div class="input-actions">
-          <span id="count">0 characters</span>
-          <button id="analyze">Analyze draft</button>
+          <span id="count">0 字符 / characters</span>
+          <button id="analyze">分析文案 / Analyze draft</button>
         </div>
         <p id="operation-status" class="operation-status" role="status"></p>
       </div>
 
       <section id="empty" class="empty panel">
-        <div class="diagram">TEXT → TWO INDEPENDENT SIGNALS → HUMAN REVIEW</div>
-        <h2>A decision aid, not an authorship verdict</h2>
-        <p>Writing-style risk and model-pattern probability remain separate. Every rule flag includes evidence and a revision action.</p>
+        <div class="diagram">文本 / TEXT → 两个独立信号 / TWO INDEPENDENT SIGNALS → 人工复核 / HUMAN REVIEW</div>
+        <h2>用于辅助决策，而非判定作者身份 <span class="en-line" lang="en">A decision aid, not an authorship verdict</span></h2>
+        <p>写作风格风险与模型模式概率分别展示。每项规则提示都包含证据与修改建议。<span class="en-line" lang="en">Writing-style risk and model-pattern probability remain separate. Every rule flag includes evidence and a revision action.</span></p>
       </section>
 
       <section id="results" class="results hidden" aria-live="polite">
         <div class="dual-track">
           <article class="track-card panel">
-            <p class="section-label">TRACK 1 · EXPLAINABLE HEURISTICS</p>
-            <h2>Writing style risk</h2>
+            <p class="section-label">轨道 1 · 可解释启发式 <span lang="en">/ TRACK 1 · EXPLAINABLE HEURISTICS</span></p>
+            <h2>写作风格风险 <span class="en-line" lang="en">Writing style risk</span></h2>
             <div class="score-line"><strong id="risk">—</strong><span>/ 100</span></div>
             <p id="band" class="status-pill">—</p>
-            <p>Statistical rhythm, transparent rules, and industrial-content signals.</p>
+            <p>基于统计节奏、透明规则和工业内容信号。<span class="en-line" lang="en">Statistical rhythm, transparent rules, and industrial-content signals.</span></p>
           </article>
           <article class="track-card panel">
-            <p class="section-label">TRACK 2 · LIGHTWEIGHT LOCAL MODEL</p>
-            <h2>AI-like pattern probability</h2>
+            <p class="section-label">轨道 2 · 本地轻量模型 <span lang="en">/ TRACK 2 · LIGHTWEIGHT LOCAL MODEL</span></p>
+            <h2>AI 类模式概率 <span class="en-line" lang="en">AI-like pattern probability</span></h2>
             <div class="score-line"><strong id="model-probability">—</strong><span>%</span></div>
             <p id="model-confidence" class="status-pill">—</p>
             <p id="model-applicability">—</p>
@@ -79,33 +79,33 @@
         <p id="review-guidance" class="review-guidance"></p>
 
         <div class="score-row">
-          <article class="score-card"><p>Industrial authenticity</p><strong id="authenticity">—</strong><span>quality score</span></article>
-          <article class="score-card"><p>Predictability proxy</p><strong id="predictability">—</strong><span>transparent heuristic</span></article>
-          <article class="score-card"><p>Sentence findings</p><strong id="finding-count">—</strong><span>explained below</span></article>
+          <article class="score-card"><p>工业真实性 <span class="en-line" lang="en">Industrial authenticity</span></p><strong id="authenticity">—</strong><span>质量评分 / QUALITY SCORE</span></article>
+          <article class="score-card"><p>可预测性代理指标 <span class="en-line" lang="en">Predictability proxy</span></p><strong id="predictability">—</strong><span>透明启发式 / TRANSPARENT HEURISTIC</span></article>
+          <article class="score-card"><p>逐句发现 <span class="en-line" lang="en">Sentence findings</span></p><strong id="finding-count">—</strong><span>详见下方 / EXPLAINED BELOW</span></article>
         </div>
 
         <div class="grid">
-          <article class="panel report-card"><h2>Quality dimensions</h2><div id="dimensions"></div></article>
-          <article class="panel report-card"><h2>Revise first</h2><ol id="suggestions"></ol></article>
+          <article class="panel report-card"><h2>质量维度 / Quality dimensions</h2><div id="dimensions"></div></article>
+          <article class="panel report-card"><h2>优先修改 / Revise first</h2><ol id="suggestions"></ol></article>
         </div>
         <article class="panel report-card">
-          <div class="section-heading"><h2>Sentence review</h2><div class="legend"><i class="low"></i>low <i class="medium"></i>medium <i class="high"></i>high</div></div>
+          <div class="section-heading"><h2>逐句复核 / Sentence review</h2><div class="legend"><i class="low"></i>低 / low <i class="medium"></i>中 / medium <i class="high"></i>高 / high</div></div>
           <div id="sentences" class="sentence-list"></div>
         </article>
-        <article class="panel report-card"><h2>Evidence</h2><div id="findings"></div></article>
+        <article class="panel report-card"><h2>证据 / Evidence</h2><div id="findings"></div></article>
       </section>
 
       <details class="panel private-panel">
-        <summary>Local industry validation samples</summary>
+        <summary>本地行业验证样本 / Local industry validation samples</summary>
         <div class="private-content">
-          <p>Add de-identified human-written samples to check false positives before any upgrade. Separate samples with a blank line. Raw text is never uploaded or added to GitHub.</p>
+          <p>添加已脱敏的人类原创样本，在升级前检查误报。样本之间请空一行。原文不会上传或加入 GitHub。<span class="en-line" lang="en">Add de-identified human-written samples to check false positives before any upgrade. Separate samples with a blank line. Raw text is never uploaded or added to GitHub.</span></p>
           <div class="private-grid">
-            <select id="corpus-category" aria-label="Sample category">
-              <option value="linkedin">LinkedIn</option><option value="facebook">Facebook</option><option value="blog">Blog</option><option value="product">Product description</option><option value="b2b">B2B general</option>
+            <select id="corpus-category" aria-label="样本类别 / Sample category">
+              <option value="linkedin">LinkedIn</option><option value="facebook">Facebook</option><option value="blog">Blog</option><option value="product">产品介绍 / Product description</option><option value="b2b">B2B 通用 / General</option>
             </select>
-            <textarea id="corpus-text" maxlength="1000000" placeholder="Paste de-identified human-written samples…"></textarea>
+            <textarea id="corpus-text" maxlength="1000000" placeholder="粘贴已脱敏的人类原创样本… / Paste de-identified human-written samples…"></textarea>
           </div>
-          <div class="input-actions"><span id="corpus-status">No local samples loaded.</span><button id="corpus-import" class="secondary">Import locally</button></div>
+          <div class="input-actions"><span id="corpus-status">尚未加载本地样本。 / No local samples loaded.</span><button id="corpus-import" class="secondary">本地导入 / Import locally</button></div>
         </div>
       </details>
     </section>
