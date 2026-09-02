@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Industrial Authenticity Detector</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">INDUSTRIAL CONTENT QUALITY</p>
+      <h1>Industrial Authenticity Detector</h1>
+      <p class="lede">Find formulaic writing, weak engineering logic, and low-information claims before industrial B2B content goes live.</p>
+      <p class="boundary">Writing-pattern diagnosis only — never an authorship verdict.</p>
+    </header>
+
+    <section class="workspace">
+      <div class="input-panel panel">
+        <div class="panel-head">
+          <label for="platform">Channel</label>
+          <select id="platform">
+            <option value="linkedin">LinkedIn</option>
+            <option value="facebook">Facebook</option>
+            <option value="blog">Blog</option>
+            <option value="b2b">B2B / sales copy</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <label class="sr-only" for="draft">Draft</label>
+        <textarea id="draft" maxlength="50000" placeholder="Paste industrial B2B copy here…"></textarea>
+        <div class="input-actions">
+          <span id="count">0 characters</span>
+          <button id="analyze">Analyze draft</button>
+        </div>
+      </div>
+
+      <section id="empty" class="empty panel">
+        <div class="diagram">TEXT → SIGNALS → DECISIONS</div>
+        <h2>A quality gate, not a black box</h2>
+        <p>The report explains every flag and keeps missing facts visible.</p>
+      </section>
+
+      <section id="results" class="results hidden" aria-live="polite">
+        <div class="score-row">
+          <article class="score-card dark">
+            <p>AI-like writing risk</p><strong id="risk">—</strong><span id="band">—</span>
+          </article>
+          <article class="score-card"><p>Industrial authenticity</p><strong id="authenticity">—</strong><span>quality score</span></article>
+          <article class="score-card"><p>Predictability proxy</p><strong id="predictability">—</strong><span>transparent heuristic</span></article>
+        </div>
+
+        <div class="grid">
+          <article class="panel report-card">
+            <h2>Quality dimensions</h2>
+            <div id="dimensions"></div>
+          </article>
+          <article class="panel report-card">
+            <h2>Revise first</h2>
+            <ol id="suggestions"></ol>
+          </article>
+        </div>
+
+        <article class="panel report-card">
+          <div class="section-heading"><h2>Sentence review</h2><div class="legend"><i class="low"></i>low <i class="medium"></i>medium <i class="high"></i>high</div></div>
+          <div id="sentences" class="sentence-list"></div>
+        </article>
+
+        <article class="panel report-card">
+          <h2>Evidence</h2>
+          <div id="findings"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
+
