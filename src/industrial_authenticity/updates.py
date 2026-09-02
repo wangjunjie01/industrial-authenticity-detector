@@ -13,6 +13,7 @@ import secrets
 import shutil
 import tempfile
 from typing import Callable
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 import zipfile
@@ -160,8 +161,25 @@ class UpdateManager:
             checked = datetime.fromisoformat(cached["checked_at"])
             if _utcnow() - checked < CHECK_INTERVAL:
                 return cached
-        release = self.fetch_json(RELEASE_API)
-        summary = self._release_summary(release)
+        try:
+            release = self.fetch_json(RELEASE_API)
+            summary = self._release_summary(release)
+        except HTTPError as exc:
+            # GitHub returns 404 when a repository has not published any
+            # releases yet. That is a successful check with no update, not a
+            # connectivity failure.
+            if exc.code != 404:
+                raise
+            exc.close()
+            summary = {
+                "checked_at": _utcnow().isoformat(),
+                "tag": None,
+                "name": None,
+                "notes": "",
+                "report_url": None,
+                "available": False,
+                "assets": {"manifest": None, "package": None, "signature": None},
+            }
         self.root.mkdir(parents=True, exist_ok=True)
         self.cache_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         return summary
@@ -188,6 +206,7 @@ class UpdateManager:
             "confirmation_token": self.tokens.issue("apply") if available else None,
             "rollback_token": self.tokens.issue("rollback") if state.get("previous_version") else None,
             "auto_install": False,
+            "release_status": "unavailable" if error else ("published" if release and release.get("tag") else "no_release"),
             "last_check_error": error,
             "private_corpus": self.corpus.status(),
         }

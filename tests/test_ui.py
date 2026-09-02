@@ -5,7 +5,7 @@ import unittest
 class UiTests(unittest.TestCase):
     def test_dual_results_and_update_controls_are_present(self):
         html = files("industrial_authenticity").joinpath("web/index.html").read_text(encoding="utf-8")
-        for required in ("risk", "model-probability", "update-button", "rollback-button", "corpus-import"):
+        for required in ("risk", "model-probability", "model-classification", "update-button", "rollback-button", "corpus-import"):
             self.assertIn(required, html)
 
     def test_page_displays_chinese_and_english_together(self):
@@ -26,6 +26,8 @@ class UiTests(unittest.TestCase):
             ("样本不足", "Insufficient"),
             ("工程可信度", "Engineering credibility"),
             ("已是最新版本", "Up to date"),
+            ("更像人工写作模式", "more human-like pattern"),
+            ("结论置信度", "Conclusion confidence"),
         ):
             self.assertIn(chinese, javascript)
             self.assertIn(english, javascript)

@@ -63,8 +63,14 @@ function render(data) {
   $('#band').textContent = `${levels[riskBand] || riskBand} ${dual('风格风险', 'style risk')}`;
   const probability = data.model_detection.probability_percent;
   $('#model-probability').textContent = probability == null ? 'N/A' : probability;
+  const classifications = {
+    ai_like_pattern: dual('倾向：更像 AI 类写作模式', 'Tendency: more AI-like pattern'),
+    human_like_pattern: dual('倾向：更像人工写作模式', 'Tendency: more human-like pattern'),
+    unavailable: dual('倾向：模型不可用', 'Tendency: model unavailable'),
+  };
+  $('#model-classification').textContent = classifications[data.model_detection.classification] || dual('倾向：需要人工复核', 'Tendency: manual review needed');
   const confidence = data.model_detection.confidence;
-  $('#model-confidence').textContent = `${levels[confidence] || dual(confidence, confidence)} ${dual('置信度', 'confidence')}`;
+  $('#model-confidence').textContent = `${dual('结论置信度', 'Conclusion confidence')}: ${levels[confidence] || dual(confidence, confidence)}`;
   const applicabilityZh = {
     insufficient: '适用性有限：文本过短，概率可能不稳定。',
     low: '部分适用：建议结合人工复核。',
@@ -102,7 +108,11 @@ function renderUpdate(data) {
   $('#current-version').textContent = `${dual('版本', 'Version')} ${data.current_version}`;
   $('#update-message').textContent = data.update_available
     ? `已批准版本 ${data.available_version} 可用，安装前需要您的确认。 / Approved release ${data.available_version} is ready. Installation requires your confirmation.`
-    : (data.last_check_error ? `${dual('更新检查失败', 'Update check failed')}: ${data.last_check_error}` : dual('已是最新版本，自动安装已关闭。', 'Up to date. Automatic installation is off.'));
+    : (data.last_check_error
+      ? `${dual('更新检查失败', 'Update check failed')}: ${data.last_check_error}`
+      : (data.release_status === 'no_release'
+        ? dual('当前没有已批准的新版本，自动安装已关闭。', 'No approved update is currently published. Automatic installation is off.')
+        : dual('已是最新版本，自动安装已关闭。', 'Up to date. Automatic installation is off.')));
   $('#update-button').classList.toggle('hidden', !data.update_available);
   $('#report-link').classList.toggle('hidden', !data.update_available || !data.report_url);
   if (data.report_url) $('#report-link').href = data.report_url;

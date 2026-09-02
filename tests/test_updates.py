@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 from unittest import mock
+from urllib.error import HTTPError
 import zipfile
 
 import industrial_authenticity.updates as updates_module
@@ -17,6 +18,20 @@ try:
     HAS_CRYPTOGRAPHY = True
 except ImportError:
     HAS_CRYPTOGRAPHY = False
+
+
+class UpdateStatusTests(unittest.TestCase):
+    def test_github_404_means_no_published_release_not_check_failure(self):
+        with tempfile.TemporaryDirectory() as temp:
+            def no_release(_):
+                raise HTTPError("https://api.github.test/releases/latest", 404, "Not Found", {}, None)
+
+            manager = UpdateManager(Path(temp), fetch_json=no_release)
+            status = manager.status()
+            self.assertFalse(status["update_available"])
+            self.assertEqual(status["release_status"], "no_release")
+            self.assertIsNone(status["last_check_error"])
+            self.assertIsNone(status["confirmation_token"])
 
 
 @unittest.skipUnless(HAS_CRYPTOGRAPHY, "cryptography extra is not installed")
@@ -116,7 +131,6 @@ class UpdateTests(unittest.TestCase):
         status = manager.status()
         self.assertFalse(status["update_available"])
         self.assertIsNone(status["confirmation_token"])
-
 
 if __name__ == "__main__":
     unittest.main()
