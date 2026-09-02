@@ -32,6 +32,20 @@ class UiTests(unittest.TestCase):
             self.assertIn(chinese, javascript)
             self.assertIn(english, javascript)
 
+    def test_safe_optimizer_controls_preserve_manual_apply_gate(self):
+        web = files("industrial_authenticity").joinpath("web")
+        html = web.joinpath("index.html").read_text(encoding="utf-8")
+        javascript = web.joinpath("app.js").read_text(encoding="utf-8")
+
+        self.assertIn("安全优化 / Optimize safely", html)
+        self.assertIn("应用与检测器版本", html)
+        self.assertIn('id="facts-confirmed"', html)
+        self.assertIn('id="apply-optimization"', html)
+        self.assertIn("/api/optimize", javascript)
+        self.assertIn("draft.value = lastOptimization.optimized_text", javascript)
+        self.assertIn("used_for_selection", javascript)
+        self.assertIn("data.app_version", javascript)
+
 
 if __name__ == "__main__":
     unittest.main()

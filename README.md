@@ -4,13 +4,15 @@ A privacy-first, local writing review tool for LinkedIn, Facebook, blogs, produc
 
 > **Scope:** Results are risk indicators, not author identification. A probability is not proof that a person or an AI wrote the text. Conflicting signals require human review.
 
-## What v0.2.0 includes
+## What v0.3.0 includes
 
 - two independent result tracks:
   - `writing_style_risk`: statistics, explainable rules, sentence highlighting, and the Industrial Authenticity Engine;
   - `model_detection`: a lightweight local model's AI-like benchmark probability, confidence, applicability, and exact model version;
 - a simultaneous Chinese/English Web UI, bilingual review, and platform profiles for LinkedIn, Facebook, Blog, B2B, and general copy;
 - prioritized revision suggestions that never invent technical facts;
+- a fully offline **Safe optimization / 安全优化** workflow that diagnoses weak dimensions, protects numbers, units, conditions, negation, product terms, and engineering meaning, then compares the original with a candidate before the user decides whether to apply it;
+- a bilingual verified-facts form. Unconfirmed entries remain notes and cannot enter the candidate draft;
 - an offline local Web UI, CLI, and compatible JSON API;
 - a private, gitignored industrial validation corpus that never leaves the machine;
 - signed, versioned detector bundles with explicit user confirmation, health checks, and one-click rollback;
@@ -30,6 +32,10 @@ industrial-authenticity serve
 ```
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Paste an article, choose the channel, and select **分析文案 / Analyze draft**. The application does not upload the article.
+
+After analysis, choose **安全优化 / Optimize safely**. The local optimizer follows a fact-led sequence: validate claims, diagnose low dimensions, revise formulaic structure, adapt to the selected platform, rerun the analyzer, and show the score changes. It never replaces the editor automatically: use **应用优化稿并重新分析 / Apply and reanalyze** only after reviewing the comparison.
+
+The optimizer is for improving editorial and engineering quality, not evading an AI detector. `model_detection` remains an independent reference and is never used to select an optimized draft.
 
 Analyze a file from the command line:
 
@@ -86,6 +92,7 @@ Local-only maintenance endpoints:
 - `POST /api/update/apply` — download, verify, validate, switch, and health-check an approved release after confirmation;
 - `POST /api/update/rollback` — return to the previous healthy version after confirmation;
 - `GET /api/private-corpus/status` and `POST /api/private-corpus/import` — manage the local validation corpus.
+- `POST /api/optimize` — generate and evaluate a fact-preserving local candidate. The request accepts `text`, `platform`, structured `verified_facts`, and `confirmed_verified`; the response includes the original/candidate analyses, quality and risk changes, change reasons, fact ledger, unresolved gaps, safety checks, and the independent model note.
 
 These endpoints reject non-loopback requests. They do not accept a caller-provided URL or filesystem path.
 
@@ -147,6 +154,7 @@ Tests cover bilingual/empty/long inputs, model failure fallback, dual-track cont
 ```text
 src/industrial_authenticity/
 ├── analyzer.py          # style/rule/authenticity analysis and dual-track contract
+├── optimizer.py         # offline fact ledger, safe candidates, and quality gates
 ├── model.py             # lightweight offline model and safe fallback
 ├── updates.py           # signed local-only install and rollback manager
 ├── private_corpus.py    # local industrial validation
@@ -160,7 +168,7 @@ tests/                   # unit, API/UI, benchmark, security, and upgrade tests
 
 ## Privacy, security, and responsible use
 
-The default server listens on `127.0.0.1`, has no telemetry, invokes no paid detector API, and stores no analyzed article. Network access is limited to checking and downloading approved GitHub Releases. Update bundles require an Ed25519 signature, SHA-256 match, repository/compatibility checks, size limits, safe extraction, local validation, and health checks.
+The default server listens on `127.0.0.1`, has no telemetry, invokes no paid detector API, and stores no analyzed article, supplied fact, or optimized draft. Analysis and optimization are fully offline. Network access is limited to checking and downloading approved GitHub Releases. Update bundles require an Ed25519 signature, SHA-256 match, repository/compatibility checks, size limits, safe extraction, local validation, and health checks.
 
 Do not expose the server publicly without separate authentication and deployment hardening. Do not use a result as evidence of academic misconduct, employment wrongdoing, authorship, or deception. Reviewers remain responsible for verifying specifications, test data, certifications, customer claims, and publication authorization.
 

@@ -20,7 +20,7 @@
 
     <section id="update-center" class="update-center panel" aria-live="polite">
       <div>
-        <p class="section-label">检测器版本 <span lang="en">/ DETECTOR VERSION</span></p>
+        <p class="section-label">应用与检测器版本 <span lang="en">/ APP &amp; DETECTOR VERSIONS</span></p>
         <strong id="current-version">正在检查… / Checking…</strong>
         <span id="update-message">仅可安装已通过评测并签名的版本。<span class="en-line" lang="en">Only approved signed releases can be installed.</span></span>
       </div>
@@ -47,7 +47,10 @@
         <textarea id="draft" maxlength="50000" placeholder="在此粘贴中文或英文工业 B2B 文案… / Paste Chinese or English industrial B2B copy here…"></textarea>
         <div class="input-actions">
           <span id="count">0 字符 / characters</span>
-          <button id="analyze">分析文案 / Analyze draft</button>
+          <div class="button-row">
+            <button id="optimize" class="secondary hidden">安全优化 / Optimize safely</button>
+            <button id="analyze">分析文案 / Analyze draft</button>
+          </div>
         </div>
         <p id="operation-status" class="operation-status" role="status"></p>
       </div>
@@ -94,6 +97,54 @@
           <div id="sentences" class="sentence-list"></div>
         </article>
         <article class="panel report-card"><h2>证据 / Evidence</h2><div id="findings"></div></article>
+      </section>
+
+      <section id="optimize-workspace" class="panel optimize-panel hidden" aria-live="polite">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">事实安全优化 <span lang="en">/ FACT-SAFE OPTIMIZATION</span></p>
+            <h2>提高内容质量，不以降低检测概率为目标 <span class="en-line" lang="en">Improve content quality—not detector evasion</span></h2>
+          </div>
+          <button id="discard-optimization" class="ghost">放弃 / Discard</button>
+        </div>
+        <p class="optimize-intro">优化在本机完成。数字、单位、条件、否定关系和技术术语受到保护；缺少事实时只提示补充，不会编造。<span class="en-line" lang="en">Optimization runs locally. Numbers, units, conditions, negation, and technical terms are protected. Missing facts are requested, never invented.</span></p>
+
+        <form id="fact-form">
+          <div class="fact-grid">
+            <label>目标读者及需要作出的决策 <span class="en-line" lang="en">Audience and decision</span><textarea id="fact-audience_decision" maxlength="2000"></textarea></label>
+            <label>应用场景或用途 <span class="en-line" lang="en">Application or use case</span><textarea id="fact-application" maxlength="2000"></textarea></label>
+            <label>已核实的尺寸、规格、材料及约束 <span class="en-line" lang="en">Verified dimensions, specifications, materials, and constraints</span><textarea id="fact-specifications_constraints" maxlength="2000"></textarea></label>
+            <label>失效风险和检查方法 <span class="en-line" lang="en">Failure risk and check method</span><textarea id="fact-failure_risk_check" maxlength="2000"></textarea></label>
+            <label>已核实的测试或证据（可留空） <span class="en-line" lang="en">Verified test or evidence (optional)</span><textarea id="fact-evidence" maxlength="2000"></textarea></label>
+            <label>可接受的取舍及推荐选择 <span class="en-line" lang="en">Trade-off and preferred choice</span><textarea id="fact-tradeoff_preference" maxlength="2000"></textarea></label>
+            <label>期望的行动引导 <span class="en-line" lang="en">Desired action</span><textarea id="fact-cta" maxlength="2000"></textarea></label>
+          </div>
+          <label class="confirmation"><input id="facts-confirmed" type="checkbox"> <span>我确认以上填写的信息已经核实。<span class="en-line" lang="en">I confirm that the information entered above has been verified.</span></span></label>
+          <p id="fact-confirmation-note" class="hint">未确认的信息只作为待核实备注，不会写入优化稿。 / Unconfirmed information remains a note and will not enter the optimized draft.</p>
+          <button id="generate-optimization" type="submit">生成安全优化稿 / Generate safe optimization</button>
+        </form>
+
+        <div id="optimization-result" class="optimization-result hidden">
+          <p id="optimization-status" class="review-guidance"></p>
+          <div class="comparison-grid">
+            <article><h3>原稿 / Original</h3><pre id="original-preview"></pre></article>
+            <article><h3>优化稿 / Optimized</h3><pre id="optimized-preview"></pre></article>
+          </div>
+          <div class="optimization-grid">
+            <article><h3>分数变化 / Score changes</h3><div id="optimization-scores"></div></article>
+            <article><h3>修改记录与理由 / Changes and reasons</h3><div id="optimization-changes"></div></article>
+          </div>
+          <article class="gap-card"><h3>尚未解决的事实缺口 / Unresolved fact gaps</h3><div id="optimization-gaps"></div></article>
+          <p id="optimization-model-note" class="model-note"></p>
+          <div class="input-actions optimization-actions">
+            <span id="copy-status"></span>
+            <div class="button-row">
+              <button id="copy-optimization" type="button" class="secondary">复制 / Copy</button>
+              <button id="regenerate-optimization" type="button" class="secondary">重新生成 / Regenerate</button>
+              <button id="apply-optimization" type="button">应用优化稿并重新分析 / Apply and re-analyze</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <details class="panel private-panel">

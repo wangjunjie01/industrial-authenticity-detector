@@ -8,6 +8,7 @@ from importlib.resources import files
 from urllib.parse import urlsplit
 
 from .analyzer import analyze_text
+from .optimizer import optimize_text
 from .updates import UpdateManager
 from .version import APP_VERSION
 
@@ -99,6 +100,19 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/analyze":
                 payload = self._payload()
                 result = analyze_text(payload.get("text", ""), payload.get("platform", "general"), self.manager.active_model())
+                self._json(HTTPStatus.OK, result)
+                return
+            if path == "/api/optimize":
+                if not self._require_local():
+                    return
+                payload = self._payload()
+                result = optimize_text(
+                    payload.get("text", ""),
+                    payload.get("platform", "general"),
+                    payload.get("verified_facts", {}),
+                    payload.get("confirmed_verified", False),
+                    self.manager.active_model(),
+                )
                 self._json(HTTPStatus.OK, result)
                 return
             if path == "/api/private-corpus/import":

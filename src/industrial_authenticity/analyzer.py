@@ -27,18 +27,19 @@ GENERIC_VERBS = {
 }
 MARKETING_WORDS = {
     "innovative", "cutting-edge", "high-quality", "premium", "advanced",
-    "revolutionary", "seamless", "robust", "game-changing", "sustainable",
+    "revolutionary", "seamless", "robust", "game-changing", "sustainable", "unmatched",
     "创新", "领先", "高品质", "优质", "先进", "革命性", "无缝", "卓越", "可持续",
 }
 TRANSITIONS = {
     "firstly", "moreover", "consequently", "in addition", "furthermore",
-    "finally", "overall", "it is worth noting", "首先", "其次", "然后", "此外",
+    "finally", "overall", "in conclusion", "it is worth noting",
+    "it is important to note that", "首先", "其次", "然后", "此外",
     "最后", "总的来说", "值得注意的是", "与此同时",
 }
 DECISION_MARKERS = {
     "choose", "select", "prefer", "avoid", "recommend", "unless", "when",
     "if", "because", "instead", "取决于", "选择", "优先", "避免", "建议", "除非",
-    "当", "如果", "因为", "而不是",
+    "当", "如果", "因为", "而不是", "decision", "recommendation", "决策", "推荐",
 }
 TRADEOFF_MARKERS = {
     "trade-off", "tradeoff", "versus", "vs", "however", "but", "while",
@@ -49,7 +50,9 @@ ENGINEERING_TERMS = {
     "orientation", "cycle", "compression", "impact", "density", "temperature",
     "humidity", "divider", "flute", "gsm", "mm", "kg", "mpa", "厚度", "公差",
     "载荷", "刚度", "重量", "结构", "方向", "循环", "压缩", "冲击", "密度",
-    "温度", "湿度", "隔板", "克重", "周转",
+    "温度", "湿度", "隔板", "克重", "周转", "constraint", "specification",
+    "failure", "risk", "check", "test", "material", "application", "条件", "约束",
+    "规格", "失效", "风险", "检查", "测试", "材料", "应用",
 }
 PLATFORMS = {"linkedin", "facebook", "blog", "b2b", "general"}
 
