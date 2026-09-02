@@ -7,6 +7,10 @@ const statusLine = $('#operation-status');
 let updateState = null;
 let lastAnalysis = null;
 let lastOptimization = null;
+let researchState = null;
+let lastAnalyzedText = '';
+let lastAnalyzedPlatform = '';
+let citationModeTouched = false;
 
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const dual = (zh, en) => `${zh} / ${en}`;
@@ -45,7 +49,25 @@ const actionTranslations = {
 const bilingualHtml = (zh, en) => `${escapeHtml(zh)}<span class="en-line" lang="en">${escapeHtml(en)}</span>`;
 const translatedHtml = (english, chinese) => bilingualHtml(chinese || '请结合原文人工复核。', english);
 
-draft.addEventListener('input', () => count.textContent = `${draft.value.length.toLocaleString()} 字符 / characters`);
+draft.addEventListener('input', () => {
+  count.textContent = `${draft.value.length.toLocaleString()} 字符 / characters`;
+  if (draft.value !== lastAnalyzedText) resetResearchState();
+});
+
+function resetResearchState() {
+  researchState = null;
+  $('#allow-network').checked = false;
+  $('#research-queries').value = '';
+  $('#manual-urls').value = '';
+  $('#outbound-preview').innerHTML = '';
+  $('#research-warning').textContent = '';
+  $('#evidence-cards').innerHTML = `<p class="hint">${dual('尚未提取证据。', 'No evidence extracted yet.')}</p>`;
+  $('#research-status').textContent = '';
+}
+
+function setDefaultCitationMode() {
+  if (!citationModeTouched) $('#citation-mode').value = $('#platform').value === 'blog' ? 'body' : 'panel';
+}
 
 async function request(url, options = {}) {
   const response = await fetch(url, options);
@@ -62,7 +84,6 @@ function render(data) {
   lastAnalysis = data;
   $('#empty').classList.add('hidden');
   $('#results').classList.remove('hidden');
-  optimizeButton.classList.remove('hidden');
   $('#risk').textContent = data.writing_style_risk.ai_like_writing_risk;
   const riskBand = data.writing_style_risk.risk_band;
   $('#band').textContent = `${levels[riskBand] || riskBand} ${dual('风格风险', 'style risk')}`;
@@ -99,12 +120,16 @@ function render(data) {
 }
 
 async function analyzeDraft() {
-  if (!draft.value.trim()) { draft.focus(); statusLine.textContent = dual('请先粘贴文案再分析。', 'Paste a draft before analysis.'); return; }
+  if (!draft.value.trim()) { draft.focus(); statusLine.textContent = dual('请先粘贴文案再分析。', 'Paste a draft before analysis.'); return false; }
   analyzeButton.disabled = true; analyzeButton.textContent = dual('分析中…', 'Analyzing…'); statusLine.textContent = '';
   try {
     const data = await request('/api/analyze', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:draft.value, platform:$('#platform').value})});
-    render(data); statusLine.textContent = dual('已在本机完成分析。', 'Analysis completed locally.');
-  } catch (error) { statusLine.textContent = error.message; }
+    render(data);
+    lastAnalyzedText = draft.value;
+    lastAnalyzedPlatform = $('#platform').value;
+    statusLine.textContent = dual('已在本机完成分析。', 'Analysis completed locally.');
+    return true;
+  } catch (error) { statusLine.textContent = error.message; return false; }
   finally { analyzeButton.disabled = false; analyzeButton.textContent = dual('分析文案', 'Analyze draft'); }
 }
 
@@ -117,6 +142,90 @@ const factFields = [
 
 function collectFacts() {
   return Object.fromEntries(factFields.map(key => [key, $(`#fact-${key}`).value.trim()]).filter(([, value]) => value));
+}
+
+function renderDiagnosis() {
+  const findings = lastAnalysis?.rule_layer?.findings || [];
+  const rows = findings.map(item => `<li><strong>${escapeHtml(item.snippet)}</strong><br>${translatedHtml(item.observation, findingTranslations[item.rule])}</li>`);
+  const dimensions = lastAnalysis?.industrial_authenticity_engine?.dimensions || {};
+  Object.entries(dimensions).filter(([, score]) => score < 55).forEach(([key, score]) => {
+    rows.push(`<li>${escapeHtml(dimensionNames[key] || key)}：${score}/100 — ${bilingualHtml('优先补充具体条件、决策依据或自然表达。', 'Prioritize concrete conditions, decision rationale, or natural phrasing.')}</li>`);
+  });
+  $('#research-diagnosis').innerHTML = rows.length
+    ? `<ul>${rows.join('')}</ul>`
+    : `<p>${bilingualHtml('没有明显的公式化问题；仍可用已核实来源补强工程细节。', 'No material formulaic pattern was found; verified sources can still strengthen engineering detail.')}</p>`;
+}
+
+function currentQueries() {
+  return $('#research-queries').value.split(/\n+/).map(value => value.trim()).filter(Boolean);
+}
+
+function renderOutboundPreview() {
+  const queries = currentQueries();
+  $('#outbound-preview').innerHTML = `<strong>${dual('将发送的准确内容', 'Exact content to be sent')}</strong>${queries.length
+    ? `<ol>${queries.map(query => `<li>${escapeHtml(query)}</li>`).join('')}</ol>`
+    : `<p>${dual('没有关键词。', 'No query entered.')}</p>`}`;
+}
+
+async function prepareResearch() {
+  const data = await request('/api/research/prepare', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text: draft.value, platform: $('#platform').value}),
+  });
+  researchState = {...data, evidence: []};
+  // Consent is session-specific. Preparing a new query set always requires a
+  // fresh, visible approval before anything leaves the computer.
+  $('#allow-network').checked = false;
+  $('#research-queries').value = data.candidate_queries.join('\n');
+  renderOutboundPreview();
+  const warning = data.brave_search_available
+    ? dual('Brave Search 已配置。勾选授权后才会发送关键词。', 'Brave Search is configured. Queries are sent only after approval.')
+    : dual('未配置 Brave API 密钥；仍可导入 HTTPS 资料链接，或直接离线优化。', 'No Brave API key is configured; you can still import HTTPS sources or optimize offline.');
+  const sensitive = data.sensitive_information_warnings?.length
+    ? ` ${dual('检测到可能的联系方式或长编号；请在批准关键词前删除敏感内容。', 'Possible contact details or a long identifier were detected; remove sensitive content before approving queries.')}`
+    : '';
+  $('#research-warning').textContent = warning + sensitive;
+  $('#research-status').textContent = '';
+  $('#evidence-cards').innerHTML = `<p class="hint">${dual('尚未提取证据。', 'No evidence extracted yet.')}</p>`;
+}
+
+function renderEvidence(cards) {
+  $('#evidence-cards').innerHTML = cards.length ? cards.map(card => {
+    const date = card.published_date || dual('未标明', 'Not stated');
+    return `<article class="evidence-card">
+      <label><input class="evidence-fact" type="checkbox" value="${escapeHtml(card.fact_id)}"><strong>${escapeHtml(card.fact_summary)}</strong></label>
+      <p>${escapeHtml(card.applicability || dual('适用条件需人工核对。', 'Applicability requires manual review.'))}</p>
+      <dl class="evidence-meta"><div><dt>${dual('来源', 'Source')}</dt><dd><a href="${escapeHtml(card.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(card.source_title || card.publisher || card.url)}</a></dd></div><div><dt>${dual('发布者', 'Publisher')}</dt><dd>${escapeHtml(card.publisher || dual('未知', 'Unknown'))}</dd></div><div><dt>${dual('日期', 'Date')}</dt><dd>${escapeHtml(date)}</dd></div><div><dt>${dual('抓取时间', 'Fetched')}</dt><dd>${escapeHtml(card.fetched_at)}</dd></div><div><dt>${dual('来源类型', 'Source type')}</dt><dd>${escapeHtml(card.source_type)}</dd></div><div><dt>${dual('可信度提示', 'Credibility cue')}</dt><dd>${escapeHtml(card.credibility)}</dd></div><div><dt>${dual('内容指纹', 'Fingerprint')}</dt><dd><code>${escapeHtml(card.content_fingerprint.slice(0, 16))}</code></dd></div></dl>
+    </article>`;
+  }).join('') : `<p class="hint">${dual('没有提取到可确认的事实。', 'No confirmable fact was extracted.')}</p>`;
+}
+
+async function searchResearch() {
+  if (!researchState?.research_session_id) await prepareResearch();
+  const queries = currentQueries();
+  const urls = $('#manual-urls').value.split(/\n+/).map(value => value.trim()).filter(Boolean);
+  if ((queries.length || urls.length) && !$('#allow-network').checked) {
+    $('#research-status').textContent = dual('请先确认只发送关键词和所选网址。', 'Confirm that only queries and selected URLs may be sent.');
+    return;
+  }
+  const button = $('#search-research');
+  button.disabled = true;
+  $('#research-status').textContent = dual('正在读取来源并生成证据卡片…', 'Reading sources and preparing evidence cards…');
+  try {
+    const data = await request('/api/research/search', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({research_session_id: researchState.research_session_id, queries, manual_urls: urls, allow_network: true}),
+    });
+    researchState = {...researchState, ...data, evidence: data.evidence_cards};
+    renderEvidence(data.evidence_cards);
+    const warningCount = data.errors?.length || 0;
+    const warnings = warningCount
+      ? ` ${dual(`${warningCount} 个来源未能读取，离线优化仍可用。`, `${warningCount} source(s) could not be read; offline optimization remains available.`)}`
+      : '';
+    $('#research-status').textContent = `${data.evidence_cards.length} ${dual('条候选事实。', 'candidate facts.')} ${warnings}`;
+  } catch (error) {
+    $('#research-status').textContent = `${dual('联网研究不可用，本次仍可仅使用原文和已确认事实。', 'Online research is unavailable; you can still optimize using the draft and confirmed local facts.')} ${error.message}`;
+  } finally { button.disabled = false; }
 }
 
 function scoreChangeRow(label, item, kind = 'quality') {
@@ -157,6 +266,9 @@ function renderOptimization(data, sourceText) {
   $('#optimization-gaps').innerHTML = data.unresolved_fact_requests.length
     ? `<ul>${data.unresolved_fact_requests.map(item => `<li>${bilingualHtml(item.message_zh, item.message_en)}</li>`).join('')}</ul>`
     : `<p>${bilingualHtml('没有检测到阻塞性事实缺口。', 'No blocking fact gap was detected.')}</p>`;
+  $('#optimization-sources').innerHTML = data.citations?.length
+    ? `<ul>${data.citations.map(item => `<li><a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.source_title || item.publisher || item.url)}</a> — ${escapeHtml(item.publisher || '')}<span class="en-line">${escapeHtml(item.fact_summary || '')}</span></li>`).join('')}</ul>`
+    : `<p>${bilingualHtml('本稿未采用网络来源事实。', 'No network-sourced fact was used in this draft.')}</p>`;
 
   const modelChange = data.score_changes.model_detection;
   const probability = modelChange.before == null || modelChange.after == null
@@ -186,6 +298,9 @@ async function generateOptimization() {
         platform: $('#platform').value,
         verified_facts: collectFacts(),
         confirmed_verified: $('#facts-confirmed').checked,
+        research_session_id: researchState?.research_session_id || null,
+        confirmed_source_fact_ids: researchState ? [...document.querySelectorAll('.evidence-fact:checked')].map(item => item.value) : [],
+        citation_mode: $('#citation-mode').value,
       }),
     });
     renderOptimization(data, sourceText);
@@ -194,20 +309,37 @@ async function generateOptimization() {
     $('#optimization-status').textContent = error.message;
   } finally {
     button.disabled = false;
-    button.textContent = dual('生成安全优化稿', 'Generate safe optimization');
+    button.textContent = dual('生成优化稿', 'Generate optimized draft');
   }
 }
 
-optimizeButton.addEventListener('click', () => {
+optimizeButton.addEventListener('click', async () => {
+  if (!draft.value.trim()) { draft.focus(); statusLine.textContent = dual('请先粘贴文案。', 'Paste a draft first.'); return; }
+  if (draft.value !== lastAnalyzedText || $('#platform').value !== lastAnalyzedPlatform) {
+    const analyzed = await analyzeDraft();
+    if (!analyzed) return;
+  }
   $('#optimize-workspace').classList.remove('hidden');
+  renderDiagnosis();
+  setDefaultCitationMode();
+  try { await prepareResearch(); }
+  catch (error) { $('#research-warning').textContent = `${dual('无法准备研究会话，可继续使用离线优化。', 'Research preparation failed; offline optimization remains available.')} ${error.message}`; }
   $('#optimize-workspace').scrollIntoView({behavior: 'smooth', block: 'start'});
-  if (!lastOptimization) generateOptimization();
 });
 
 $('#fact-form').addEventListener('submit', event => { event.preventDefault(); generateOptimization(); });
+$('#research-queries').addEventListener('input', renderOutboundPreview);
+$('#citation-mode').addEventListener('change', () => { citationModeTouched = true; });
+$('#platform').addEventListener('change', () => {
+  resetResearchState();
+  setDefaultCitationMode();
+});
+$('#search-research').addEventListener('click', searchResearch);
 $('#regenerate-optimization').addEventListener('click', generateOptimization);
+$('#back-to-facts').addEventListener('click', () => $('#evidence-cards').scrollIntoView({behavior:'smooth', block:'center'}));
 $('#discard-optimization').addEventListener('click', () => {
   lastOptimization = null;
+  resetResearchState();
   $('#optimization-result').classList.add('hidden');
   $('#optimize-workspace').classList.add('hidden');
 });

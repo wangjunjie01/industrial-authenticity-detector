@@ -14,7 +14,7 @@ from .analyzer import ENGINEERING_TERMS, MARKETING_WORDS, TRANSITIONS, analyze_t
 from .model import LightweightModel
 
 
-OPTIMIZER_VERSION = "iad-safe-optimizer-0.3.0"
+OPTIMIZER_VERSION = "iad-research-optimizer-0.4.0"
 MAX_TEXT_LENGTH = 50_000
 FACT_FIELDS = {
     "audience_decision": ("目标读者及决策", "Audience and decision"),
@@ -44,6 +44,37 @@ def _clean_fact_values(values: Any) -> dict[str, str]:
             raise ValueError(f"Verified fact field {key} exceeds 2,000 characters.")
         if value:
             cleaned[key] = value
+    return cleaned
+
+
+def _clean_source_facts(values: Any) -> list[dict[str, str]]:
+    if values is None:
+        return []
+    if not isinstance(values, list):
+        raise ValueError("source_facts must be an array.")
+    cleaned = []
+    for value in values:
+        if not isinstance(value, dict):
+            raise ValueError("Each source fact must be an object.")
+        summary = value.get("fact_summary", "")
+        url = value.get("url", "")
+        if not isinstance(summary, str) or not summary.strip() or len(summary) > 500:
+            raise ValueError("Each source fact summary must be 1 to 500 characters.")
+        if not isinstance(url, str) or not url.startswith("https://") or len(url) > 2_048:
+            raise ValueError("Each source fact must retain a traceable HTTPS source.")
+        cleaned.append({
+            "fact_id": str(value.get("fact_id", ""))[:80],
+            "fact_summary": summary.strip(),
+            "applicability": str(value.get("applicability", ""))[:500],
+            "source_title": str(value.get("source_title", ""))[:300],
+            "publisher": str(value.get("publisher", ""))[:200],
+            "url": url,
+            "published_date": str(value.get("published_date") or "")[:80],
+            "fetched_at": str(value.get("fetched_at") or "")[:80],
+            "source_type": str(value.get("source_type", "other_web"))[:80],
+            "credibility": str(value.get("credibility", "review_required"))[:80],
+            "content_fingerprint": str(value.get("content_fingerprint", ""))[:128],
+        })
     return cleaned
 
 
@@ -165,6 +196,45 @@ def _verified_block(facts: dict[str, str], language: str) -> str:
     return heading + ("：\n" if language == "zh" else ":\n") + "\n".join(rows)
 
 
+def _source_block(facts: list[dict[str, str]], language: str, citation_mode: str, platform: str) -> str:
+    if not facts:
+        return ""
+    heading = "用户确认的来源事实" if language == "zh" else "User-confirmed source facts"
+    rows = [f"- {fact['fact_summary']}" for fact in facts]
+    if citation_mode == "body" and platform == "blog":
+        source_heading = "来源" if language == "zh" else "Sources"
+        rows.extend(["", source_heading, *[f"- {fact['source_title'] or fact['publisher']}: {fact['url']}" for fact in facts]])
+    return heading + ("：\n" if language == "zh" else ":\n") + "\n".join(rows)
+
+
+def _numeric_source_conflicts(text: str, facts: list[dict[str, str]]) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Conservatively reject sourced numbers that contradict the same-unit draft value."""
+    pattern = re.compile(r"(?i)(\d+(?:[.,]\d+)?)\s*(mm|cm|m|kg|g|%|mpa|gsm|°c|cycles?)\b")
+    original_by_unit: dict[str, set[str]] = {}
+    for number, unit in pattern.findall(text):
+        original_by_unit.setdefault(unit.casefold(), set()).add(number.replace(",", "."))
+    accepted, conflicts = [], []
+    for fact in facts:
+        source_by_unit: dict[str, set[str]] = {}
+        for number, unit in pattern.findall(fact["fact_summary"]):
+            source_by_unit.setdefault(unit.casefold(), set()).add(number.replace(",", "."))
+        conflicting_units = [
+            unit for unit, values in source_by_unit.items()
+            if unit in original_by_unit and values.isdisjoint(original_by_unit[unit])
+        ]
+        if conflicting_units:
+            conflicts.append({
+                "fact_id": fact["fact_id"],
+                "reason": "numeric_unit_conflict",
+                "units": ", ".join(conflicting_units),
+                "fact_summary": fact["fact_summary"],
+                "url": fact["url"],
+            })
+        else:
+            accepted.append(fact)
+    return accepted, conflicts
+
+
 def _protected_items(text: str) -> dict[str, list[str]]:
     numbers = re.findall(r"(?i)(?<!\w)\d+(?:[.,]\d+)?\s*(?:mm|cm|m|kg|g|%|mpa|gsm|°c|cycles?)?", text)
     negatives = re.findall(r"(?i)(?<![A-Za-z])(?:not|no|never|without|cannot|can't|mustn't)(?![A-Za-z])|不得|不能|不应|没有|未|无", text)
@@ -179,7 +249,7 @@ def _contains_multiset(candidate: str, items: list[str]) -> bool:
     return all(folded.count(item) >= count for item, count in source.items())
 
 
-def _safety_check(original: str, candidate: str, verified: dict[str, str]) -> dict:
+def _safety_check(original: str, candidate: str, verified: dict[str, str], source_facts: list[dict[str, str]] | None = None) -> dict:
     protected = _protected_items(original)
     checks = {
         name: _contains_multiset(candidate, items)
@@ -187,7 +257,9 @@ def _safety_check(original: str, candidate: str, verified: dict[str, str]) -> di
     }
     # Claims with a high fabrication cost may only appear when already present
     # in the source or in user-confirmed facts.
-    allowed = (original + "\n" + "\n".join(verified.values())).casefold()
+    allowed = (original + "\n" + "\n".join(verified.values()) + "\n" + "\n".join(
+        fact["fact_summary"] for fact in (source_facts or [])
+    )).casefold()
     risky_patterns = [
         r"\b(?:certified|certification|customer achieved|saved \$|roi of)\b",
         r"(?:认证|客户实现|节省金额|投资回报率)",
@@ -265,6 +337,8 @@ def optimize_text(
     verified_facts: Any = None,
     confirmed_verified: bool = False,
     model: LightweightModel | None = None,
+    source_facts: Any = None,
+    citation_mode: str = "panel",
 ) -> dict:
     """Return the best safe offline candidate and its transparent evaluation."""
     if not isinstance(text, str) or not text.strip():
@@ -272,6 +346,10 @@ def optimize_text(
     if len(text) > MAX_TEXT_LENGTH:
         raise ValueError("Text exceeds the 50,000-character local optimization limit.")
     facts = _clean_fact_values(verified_facts)
+    if citation_mode not in {"panel", "body", "none"}:
+        raise ValueError("citation_mode must be panel, body, or none.")
+    cleaned_source_facts = _clean_source_facts(source_facts)
+    usable_source_facts, fact_conflicts = _numeric_source_conflicts(text, cleaned_source_facts)
     confirmed = confirmed_verified is True
     usable_facts = facts if confirmed else {}
     original = analyze_text(text, platform, model)
@@ -286,6 +364,9 @@ def optimize_text(
         (adapted, clean_changes + split_changes + platform_changes),
     ]
     block = _verified_block(usable_facts, language)
+    source_block = _source_block(usable_source_facts, language, citation_mode, platform)
+    if source_block:
+        block = (block + "\n\n" + source_block).strip()
     if block:
         candidates.extend([
             (text.rstrip() + "\n\n" + block, [{
@@ -311,7 +392,7 @@ def optimize_text(
     for candidate, changes in candidates:
         if not candidate or candidate == text:
             continue
-        safety = _safety_check(text, candidate, usable_facts)
+        safety = _safety_check(text, candidate, usable_facts, usable_source_facts)
         if not safety["passed"]:
             continue
         analysis = analyze_text(candidate, platform, model)
@@ -335,7 +416,7 @@ def optimize_text(
         status = "improved"
     else:
         optimized, changes, optimized_analysis = text, [], original
-        safety = _safety_check(text, text, usable_facts)
+        safety = _safety_check(text, text, usable_facts, usable_source_facts)
         improved_targets = []
         status = "blocked_by_missing_facts" if _missing_fact_requests(original, usable_facts) else "no_safe_improvement"
 
@@ -365,8 +446,17 @@ def optimize_text(
                 {"field": key, "label_zh": FACT_FIELDS[key][0], "label_en": FACT_FIELDS[key][1], "value": value}
                 for key, value in facts.items() if not confirmed
             ],
+            "confirmed_source_facts": usable_source_facts,
+            # Retained as a response alias for early v0.4.0 preview clients.
+            "verified_source_facts": usable_source_facts,
+            "source_fact_conflicts": fact_conflicts,
             "missing_or_unverified": missing,
         },
+        "citations": [
+            {key: fact[key] for key in ("fact_id", "fact_summary", "source_title", "publisher", "url", "published_date", "source_type", "credibility")}
+            for fact in usable_source_facts
+        ],
+        "citation_mode": citation_mode,
         "unresolved_fact_requests": missing,
         "blocked_dimensions": blocked_dimensions,
         "safety": safety,

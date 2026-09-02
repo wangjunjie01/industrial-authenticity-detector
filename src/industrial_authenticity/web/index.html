@@ -48,7 +48,7 @@
         <div class="input-actions">
           <span id="count">0 字符 / characters</span>
           <div class="button-row">
-            <button id="optimize" class="secondary hidden">安全优化 / Optimize safely</button>
+            <button id="optimize" class="secondary">研究并优化 / Research &amp; Optimize</button>
             <button id="analyze">分析文案 / Analyze draft</button>
           </div>
         </div>
@@ -102,14 +102,33 @@
       <section id="optimize-workspace" class="panel optimize-panel hidden" aria-live="polite">
         <div class="section-heading">
           <div>
-            <p class="section-label">事实安全优化 <span lang="en">/ FACT-SAFE OPTIMIZATION</span></p>
-            <h2>提高内容质量，不以降低检测概率为目标 <span class="en-line" lang="en">Improve content quality—not detector evasion</span></h2>
+            <p class="section-label">研究并优化 <span lang="en">/ RESEARCH &amp; OPTIMIZE</span></p>
+            <h2>减少公式化表达，补强可核实的工程事实 <span class="en-line" lang="en">Reduce formulaic writing and strengthen verifiable engineering facts</span></h2>
           </div>
           <button id="discard-optimization" class="ghost">放弃 / Discard</button>
         </div>
-        <p class="optimize-intro">优化在本机完成。数字、单位、条件、否定关系和技术术语受到保护；缺少事实时只提示补充，不会编造。<span class="en-line" lang="en">Optimization runs locally. Numbers, units, conditions, negation, and technical terms are protected. Missing facts are requested, never invented.</span></p>
+        <p class="optimize-intro">“去 AI 味”指改善写作模式和内容质量，不是隐藏作者身份或规避检测。改写和评分在本机完成；数字、单位、条件、否定关系和技术术语受到保护。<span class="en-line" lang="en">“Reduce AI-like writing” means improving writing patterns and content quality—not hiding authorship or evading detection. Rewriting and scoring stay local; numbers, units, conditions, negation, and technical terms are protected.</span></p>
+
+        <div class="research-flow">
+          <section class="research-step">
+            <p class="step-number">1</p><div><h3>诊断 AI 写作味 / Diagnose formulaic writing</h3><div id="research-diagnosis" class="compact-list"></div></div>
+          </section>
+          <section class="research-step">
+            <p class="step-number">2</p><div><h3>审核搜索关键词 / Review search queries</h3><p class="hint">可修改、删除或补充；只有这里确认的关键词会发送。 / Edit, remove, or add terms. Only approved queries below will be sent.</p><textarea id="research-queries" class="research-textarea" maxlength="2000"></textarea><div id="outbound-preview" class="outbound-preview"></div></div>
+          </section>
+          <section class="research-step">
+            <p class="step-number">3</p><div><h3>允许联网研究 / Allow online research</h3><label class="confirmation"><input id="allow-network" type="checkbox"><span>我确认只发送上述关键词，不发送原文。 / I approve sending only the queries above, not the draft.</span></label><p class="hint">搜索服务：Brave Search API。<a href="https://api-dashboard.search.brave.com/documentation/resources/privacy-notice" target="_blank" rel="noopener noreferrer">隐私说明 / Privacy notice</a></p><p id="research-warning" class="warning-note"></p></div>
+          </section>
+          <section class="research-step">
+            <p class="step-number">4</p><div><h3>选择信息来源 / Choose sources</h3><label>手动添加官网、标准、论文或产品资料网址（每行一个，仅 HTTPS）<span class="en-line" lang="en">Add official, standards, paper, or product URLs manually (one per line, HTTPS only)</span><textarea id="manual-urls" class="research-textarea" maxlength="10000"></textarea></label><button id="search-research" type="button" class="secondary">搜索并提取证据 / Search &amp; extract evidence</button><p id="research-status" class="operation-status"></p></div>
+          </section>
+          <section class="research-step">
+            <p class="step-number">5</p><div><h3>确认事实 / Confirm facts</h3><p class="hint">来源级别只用于提示。网络摘要不会自动进入文案，必须逐条勾选。 / Source level is guidance only. Network summaries never enter the draft until checked individually.</p><div id="evidence-cards" class="evidence-cards"><p class="hint">尚未提取证据。 / No evidence extracted yet.</p></div></div>
+          </section>
+        </div>
 
         <form id="fact-form">
+          <h3>补充本地已核实事实 / Add locally verified facts</h3>
           <div class="fact-grid">
             <label>目标读者及需要作出的决策 <span class="en-line" lang="en">Audience and decision</span><textarea id="fact-audience_decision" maxlength="2000"></textarea></label>
             <label>应用场景或用途 <span class="en-line" lang="en">Application or use case</span><textarea id="fact-application" maxlength="2000"></textarea></label>
@@ -121,7 +140,8 @@
           </div>
           <label class="confirmation"><input id="facts-confirmed" type="checkbox"> <span>我确认以上填写的信息已经核实。<span class="en-line" lang="en">I confirm that the information entered above has been verified.</span></span></label>
           <p id="fact-confirmation-note" class="hint">未确认的信息只作为待核实备注，不会写入优化稿。 / Unconfirmed information remains a note and will not enter the optimized draft.</p>
-          <button id="generate-optimization" type="submit">生成安全优化稿 / Generate safe optimization</button>
+          <label class="citation-choice">正文引用方式 / In-draft citations<select id="citation-mode"><option value="panel">仅证据面板 / Evidence panel only</option><option value="body">正文末尾来源清单 / Source list in draft</option></select></label>
+          <button id="generate-optimization" type="submit">生成优化稿 / Generate optimized draft</button>
         </form>
 
         <div id="optimization-result" class="optimization-result hidden">
@@ -135,12 +155,14 @@
             <article><h3>修改记录与理由 / Changes and reasons</h3><div id="optimization-changes"></div></article>
           </div>
           <article class="gap-card"><h3>尚未解决的事实缺口 / Unresolved fact gaps</h3><div id="optimization-gaps"></div></article>
+          <article class="gap-card"><h3>已采用来源 / Sources used</h3><div id="optimization-sources"></div></article>
           <p id="optimization-model-note" class="model-note"></p>
           <div class="input-actions optimization-actions">
             <span id="copy-status"></span>
             <div class="button-row">
               <button id="copy-optimization" type="button" class="secondary">复制 / Copy</button>
               <button id="regenerate-optimization" type="button" class="secondary">重新生成 / Regenerate</button>
+              <button id="back-to-facts" type="button" class="ghost">返回修改事实 / Back to facts</button>
               <button id="apply-optimization" type="button">应用优化稿并重新分析 / Apply and re-analyze</button>
             </div>
           </div>

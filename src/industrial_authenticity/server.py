@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 
 from .analyzer import analyze_text
 from .optimizer import optimize_text
+from .research import ResearchManager
 from .updates import UpdateManager
 from .version import APP_VERSION
 
@@ -23,9 +24,16 @@ ASSETS = {
 
 
 class DetectorServer(ThreadingHTTPServer):
-    def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], manager: UpdateManager):
+    def __init__(
+        self,
+        address: tuple[str, int],
+        handler: type[BaseHTTPRequestHandler],
+        manager: UpdateManager,
+        research_manager: ResearchManager | None = None,
+    ):
         super().__init__(address, handler)
         self.update_manager = manager
+        self.research_manager = research_manager or ResearchManager()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -34,6 +42,10 @@ class Handler(BaseHTTPRequestHandler):
     @property
     def manager(self) -> UpdateManager:
         return self.server.update_manager  # type: ignore[attr-defined]
+
+    @property
+    def research(self) -> ResearchManager:
+        return self.server.research_manager  # type: ignore[attr-defined]
 
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -106,14 +118,38 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._require_local():
                     return
                 payload = self._payload()
+                source_facts = []
+                research_session_id = payload.get("research_session_id")
+                confirmed_source_fact_ids = payload.get("confirmed_source_fact_ids", [])
+                if research_session_id is not None or confirmed_source_fact_ids:
+                    source_facts = self.research.confirmed_facts(research_session_id, confirmed_source_fact_ids)
                 result = optimize_text(
                     payload.get("text", ""),
                     payload.get("platform", "general"),
                     payload.get("verified_facts", {}),
                     payload.get("confirmed_verified", False),
                     self.manager.active_model(),
+                    source_facts,
+                    payload.get("citation_mode", "panel"),
                 )
                 self._json(HTTPStatus.OK, result)
+                return
+            if path == "/api/research/prepare":
+                if not self._require_local():
+                    return
+                payload = self._payload()
+                self._json(HTTPStatus.OK, self.research.prepare(payload.get("text", "")))
+                return
+            if path == "/api/research/search":
+                if not self._require_local():
+                    return
+                payload = self._payload()
+                self._json(HTTPStatus.OK, self.research.search(
+                    payload.get("research_session_id"),
+                    payload.get("queries", []),
+                    payload.get("manual_urls", []),
+                    payload.get("allow_network", False),
+                ))
                 return
             if path == "/api/private-corpus/import":
                 if not self._require_local():
@@ -150,7 +186,7 @@ def serve(host: str = "127.0.0.1", port: int = 8765, state_root: str | None = No
     manager = UpdateManager(state_root=state_root)
     server = DetectorServer((host, port), Handler, manager)
     print(f"Industrial Authenticity Detector: http://{host}:{port}")
-    print("Text analysis is offline. Network is used only for signed release checks and confirmed downloads.")
+    print("Analysis and rewriting are local. Network is used only after confirmed research queries or for signed updates.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

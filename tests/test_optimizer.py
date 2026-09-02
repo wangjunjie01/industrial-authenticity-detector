@@ -94,6 +94,39 @@ class OptimizerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             optimize_text("Valid text.", verified_facts={"remote_url": "https://example.com"})
 
+    def test_confirmed_source_fact_is_traceable_and_ai_probability_is_not_ranked(self):
+        source = "Choose the PP divider after checking the load direction."
+        source_fact = {
+            "fact_id": "fact-1",
+            "fact_summary": "A 5 mm PP divider requires a documented load check before release.",
+            "source_title": "Technical note",
+            "publisher": "example.com",
+            "url": "https://example.com/note",
+            "source_type": "official_technical_material",
+            "credibility": "medium_high",
+        }
+        result = optimize_text(source, "blog", source_facts=[source_fact], citation_mode="body")
+
+        self.assertIn("5 mm", result["optimized_text"])
+        self.assertIn("https://example.com/note", result["optimized_text"])
+        self.assertEqual(result["citations"][0]["fact_id"], "fact-1")
+        self.assertEqual(result["fact_ledger"]["confirmed_source_facts"][0]["fact_id"], "fact-1")
+        self.assertFalse(result["score_changes"]["model_detection"]["used_for_selection"])
+
+    def test_conflicting_source_number_is_not_used(self):
+        source = "Approve the 5 mm PP divider only after a load check."
+        conflicting = {
+            "fact_id": "fact-conflict",
+            "fact_summary": "Use a 10 mm PP divider for this application.",
+            "source_title": "Different specification",
+            "url": "https://example.com/specification",
+        }
+        result = optimize_text(source, "b2b", source_facts=[conflicting])
+
+        self.assertNotIn("10 mm", result["optimized_text"])
+        self.assertEqual(result["citations"], [])
+        self.assertEqual(result["fact_ledger"]["source_fact_conflicts"][0]["fact_id"], "fact-conflict")
+
 
 if __name__ == "__main__":
     unittest.main()

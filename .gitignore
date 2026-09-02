@@ -9,6 +9,8 @@ dist/
 build/
 *.egg-info/
 .DS_Store
+.env
+.env.local
 private_corpus/
 *.private.jsonl
 .iad-state/

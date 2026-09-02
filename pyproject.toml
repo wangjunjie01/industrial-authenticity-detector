@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "industrial-authenticity-detector"
-version = "0.3.0"
+version = "0.4.0"
 description = "Explainable AI-like writing-risk and industrial authenticity analysis for B2B content."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,7 @@ classifiers = [
 [project.optional-dependencies]
 updates = ["cryptography>=42,<46"]
 benchmark = ["datasets>=3,<5"]
+research = ["pypdf>=5,<7"]
 
 [project.scripts]
 industrial-authenticity = "industrial_authenticity.cli:main"

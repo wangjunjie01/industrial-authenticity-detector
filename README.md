@@ -4,14 +4,17 @@ A privacy-first, local writing review tool for LinkedIn, Facebook, blogs, produc
 
 > **Scope:** Results are risk indicators, not author identification. A probability is not proof that a person or an AI wrote the text. Conflicting signals require human review.
 
-## What v0.3.0 includes
+## What v0.4.0 includes
 
 - two independent result tracks:
   - `writing_style_risk`: statistics, explainable rules, sentence highlighting, and the Industrial Authenticity Engine;
   - `model_detection`: a lightweight local model's AI-like benchmark probability, confidence, applicability, and exact model version;
 - a simultaneous Chinese/English Web UI, bilingual review, and platform profiles for LinkedIn, Facebook, Blog, B2B, and general copy;
 - prioritized revision suggestions that never invent technical facts;
-- a fully offline **Safe optimization / 安全优化** workflow that diagnoses weak dimensions, protects numbers, units, conditions, negation, product terms, and engineering meaning, then compares the original with a candidate before the user decides whether to apply it;
+- a **Research & Optimize / 研究并优化** workflow that first diagnoses formulaic writing, lets the user review the exact search queries, and turns selected public sources into traceable evidence cards;
+- an offline fallback that still diagnoses and improves the draft when Brave Search is not configured or research is unavailable;
+- fact-preserving optimization that protects numbers, units, conditions, negation, product terms, and engineering meaning, then compares the original with a candidate before the user decides whether to apply it;
+- network facts remain excluded until the user checks each evidence card. AI-like probability remains visible but does not influence candidate generation, ranking, or acceptance;
 - a bilingual verified-facts form. Unconfirmed entries remain notes and cannot enter the candidate draft;
 - an offline local Web UI, CLI, and compatible JSON API;
 - a private, gitignored industrial validation corpus that never leaves the machine;
@@ -27,13 +30,24 @@ Requires Python 3.10 or newer.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[updates]'
+python -m pip install -e '.[updates,research]'
 industrial-authenticity serve
 ```
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Paste an article, choose the channel, and select **分析文案 / Analyze draft**. The application does not upload the article.
 
-After analysis, choose **安全优化 / Optimize safely**. The local optimizer follows a fact-led sequence: validate claims, diagnose low dimensions, revise formulaic structure, adapt to the selected platform, rerun the analyzer, and show the score changes. It never replaces the editor automatically: use **应用优化稿并重新分析 / Apply and reanalyze** only after reviewing the comparison.
+Choose **研究并优化 / Research & Optimize** at any time. If the draft has not been analyzed, the application analyzes it locally first. Then review the diagnosis and edit the proposed queries. The exact outbound query preview is shown before research begins; the full draft is never sent to the search service.
+
+For Brave web results, set the API key only in the server environment:
+
+```bash
+export BRAVE_SEARCH_API_KEY='your-key-here'
+industrial-authenticity serve
+```
+
+The key is never returned to the browser, logged, or committed. Without a key, paste public HTTPS source links into the manual-source field. Manual sources and offline optimization remain available. Brave's official [Web Search API documentation](https://api-dashboard.search.brave.com/api-reference/web/search/get) describes the endpoint and authentication header; review the linked [Brave Search API privacy notice](https://api-dashboard.search.brave.com/documentation/resources/privacy-notice) before enabling research.
+
+Search results become evidence cards, not automatic writing facts. Confirm each applicable fact, choose whether Blog citations should appear in the body, then generate the candidate. The optimizer follows a fact-led sequence: validate claims, diagnose formulaic patterns, improve industrial structure, adapt to the selected platform, rerun the analyzer, and show score changes. It never replaces the editor automatically: use **应用优化稿并重新分析 / Apply and reanalyze** only after reviewing the comparison.
 
 The optimizer is for improving editorial and engineering quality, not evading an AI detector. `model_detection` remains an independent reference and is never used to select an optimized draft.
 
@@ -93,8 +107,12 @@ Local-only maintenance endpoints:
 - `POST /api/update/rollback` — return to the previous healthy version after confirmation;
 - `GET /api/private-corpus/status` and `POST /api/private-corpus/import` — manage the local validation corpus.
 - `POST /api/optimize` — generate and evaluate a fact-preserving local candidate. The request accepts `text`, `platform`, structured `verified_facts`, and `confirmed_verified`; the response includes the original/candidate analyses, quality and risk changes, change reasons, fact ledger, unresolved gaps, safety checks, and the independent model note.
+- `POST /api/research/prepare` — create a short-lived in-memory session, extract candidate queries locally, and return the exact outbound preview without making a network request.
+- `POST /api/research/search` — after explicit consent, research approved queries and/or public HTTPS URLs and return unconfirmed evidence cards.
 
-These endpoints reject non-loopback requests. They do not accept a caller-provided URL or filesystem path.
+`POST /api/optimize` also accepts optional `research_session_id`, `confirmed_source_fact_ids`, and `citation_mode` (`panel` or `body`). Old v0.3 requests remain valid and use offline optimization. Research sessions expire after 30 minutes and disappear when the service restarts.
+
+These endpoints reject non-loopback requests. Update and optimization endpoints do not accept caller-provided download locations or filesystem paths. The research endpoint accepts only public HTTPS sources: loopback, private, link-local, reserved, credential-bearing, non-standard-port, and non-web targets are rejected, including after redirects. Downloads are time-, type-, page-, and size-limited.
 
 ## Safe update lifecycle
 
@@ -154,7 +172,8 @@ Tests cover bilingual/empty/long inputs, model failure fallback, dual-track cont
 ```text
 src/industrial_authenticity/
 ├── analyzer.py          # style/rule/authenticity analysis and dual-track contract
-├── optimizer.py         # offline fact ledger, safe candidates, and quality gates
+├── optimizer.py         # fact ledger, safe candidates, citations, and quality gates
+├── research.py          # consent gate, Brave/manual sources, and ephemeral evidence cards
 ├── model.py             # lightweight offline model and safe fallback
 ├── updates.py           # signed local-only install and rollback manager
 ├── private_corpus.py    # local industrial validation
@@ -168,7 +187,7 @@ tests/                   # unit, API/UI, benchmark, security, and upgrade tests
 
 ## Privacy, security, and responsible use
 
-The default server listens on `127.0.0.1`, has no telemetry, invokes no paid detector API, and stores no analyzed article, supplied fact, or optimized draft. Analysis and optimization are fully offline. Network access is limited to checking and downloading approved GitHub Releases. Update bundles require an Ed25519 signature, SHA-256 match, repository/compatibility checks, size limits, safe extraction, local validation, and health checks.
+The default server listens on `127.0.0.1`, has no telemetry, invokes no paid detector API, and stores no analyzed article, supplied fact, search query, or optimized draft. Analysis and rewriting remain local. When the user explicitly allows research, only reviewed queries go to Brave Search; selected public pages are fetched locally and reduced to short, in-memory evidence cards. Full pages are not retained. Network access is otherwise limited to checking and downloading approved GitHub Releases. Update bundles require an Ed25519 signature, SHA-256 match, repository/compatibility checks, size limits, safe extraction, local validation, and health checks.
 
 Do not expose the server publicly without separate authentication and deployment hardening. Do not use a result as evidence of academic misconduct, employment wrongdoing, authorship, or deception. Reviewers remain responsible for verifying specifications, test data, certifications, customer claims, and publication authorization.
 

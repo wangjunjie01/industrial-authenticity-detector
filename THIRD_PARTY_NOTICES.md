@@ -5,6 +5,11 @@ Industrial Authenticity Detector source code is MIT-licensed. The items below ke
 ## Optional runtime dependency
 
 - **cryptography** — used locally to verify Ed25519 release signatures. Distributed by its maintainers under Apache-2.0 OR BSD-3-Clause. This repository does not bundle its source.
+- **pypdf** — optionally extracts text from user-selected public PDF sources for temporary local evidence cards. Distributed by its maintainers under BSD-3-Clause. This repository does not bundle its source.
+
+## Optional research service
+
+- **Brave Search API** — optional search provider used only after the user reviews the exact queries and explicitly permits network research. Authentication uses a server-side environment variable. Search results and source pages retain their publishers' rights and are not redistributed by this project. See the official [API documentation](https://api-dashboard.search.brave.com/api-reference/web/search/get) and [privacy notice](https://api-dashboard.search.brave.com/documentation/resources/privacy-notice).
 
 ## Cloud benchmark dependency and data
 
